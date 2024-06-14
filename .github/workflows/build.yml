@@ -1,0 +1,50 @@
+name: build
+on: [push, pull_request]
+jobs:
+  #windows:
+  #  runs-on: windows-latest
+  #  defaults:
+  #    run:
+  #      shell: msys2 {0}
+  #  steps:
+  #    - uses: actions/checkout@v4
+  #    - uses: msys2/setup-msys2@v2
+  #      with:
+  #        msystem: MINGW64
+  #        update: true
+  #        install: make mingw-w64-x86_64-gcc mingw-w64-x86_64-perl-win32-tieregistry
+  #    - name: Build and Test
+  #      run: |
+  #        : # Fix Perl locale issue
+  #        export LC_ALL=en_US.utf8
+  #        : # Fix Perl search path/Win32::TieRegistry version issue
+  #        dir=D:/a/_temp/msys64/mingw64/lib/perl5/site_perl
+  #        mkdir -p $dir/5.38.2/Win32
+  #        ln $dir/5.32.1/Win32/TieRegistry.pm $dir/5.38.2/Win32/TieRegistry.pm
+  #        : # Downgrade zlib version to match LuaLaTex
+  #        pkg=mingw-w64-x86_64-zlib
+  #        ver=1.3-1
+  #        file=$pkg-$ver-any.pkg.tar.zst
+  #        curl -LO https://repo.msys2.org/mingw/mingw64/$file
+  #        pacman -U --noconfirm $file
+  #        : # Install TeX Live packages
+  #        pacman -S --noconfirm mingw-w64-x86_64-texlive-luatex mingw-w64-x86_64-texlive-latex-extra mingw-w64-x86_64-texlive-fonts-extra
+  #        : # Build and Test
+  #        make -j
+  #macos:
+  #  runs-on: macos-latest
+  #  steps:
+  #    - uses: actions/checkout@v4
+  #    - uses: melusina-org/setup-macports@v1
+  #    - name: Build and Test
+  #      run: |
+  #        sudo port install texlive-luatex texlive-latex-extra texlive-fonts-extra
+  #        make -j
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and Test
+        run: |
+          sudo apt install texlive-luatex texlive-latex-extra texlive-fonts-extra texlive-xetex texlive-science ghostscript poppler-utils
+          make -j

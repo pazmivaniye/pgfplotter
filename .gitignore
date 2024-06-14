@@ -1,0 +1,5 @@
+*.o
+*.a
+test/test
+test/build
+test/output
