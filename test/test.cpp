@@ -13,6 +13,8 @@
     std::cout << "Passed " << test << std::endl; \
     ++test;
 
+namespace pgf = pgfplotter;
+
 static const std::string PlotName = "plot";
 
 static std::string get_dir(const std::string& path)
@@ -38,11 +40,11 @@ int main(int, char** argv)
     }
     CATCH
 
+    pgf::Plotter p;
     try
     {
         const auto data = pgfplotter::mesh_grid([](double x, double y){ return
             std::sin(x)*std::sin(y); }, 0., 1., 0., 1., 50);
-        pgfplotter::Plotter p;
         p.surf(data[0], data[1], data[2]);
         p.x_min(0.);
         p.x_max(1.);
@@ -51,10 +53,11 @@ int main(int, char** argv)
         p.z_min(0.);
         p.z_max(1.);
         p.view(45., 45.);
-        p.x_label("$x$ (\\si{\\lu})");
-        p.y_label("$y$ (\\si{\\arcsec})");
-        p.z_label("$\\dv{^2x}{y^2}$ (\\si{\\lu^2\\per\\arcsec^2})");
-        p.plot(outputDir + "/" + PlotName);
+        p.setXLabel("$x$ (\\si{\\lu})");
+        p.setYLabel("$y$ (\\si{\\arcsec})");
+        p.setZLabel("$\\dv{^2x}{y^2}$ (\\si{\\lu^2\\per\\arcsec^2})");
+        p.setTitle("Test Plot");
+        pgf::plot(outputDir + "/" + PlotName, p);
     }
     CATCH
 
@@ -100,6 +103,19 @@ int main(int, char** argv)
         {
             throw std::runtime_error("Did not delete data directory.");
         }
+    }
+    CATCH
+
+    try
+    {
+        pgf::plot(outputDir + "/" + PlotName + "-1", p, p);
+    }
+    CATCH
+
+    try
+    {
+        std::vector<pgf::Plotter> v(2, p);
+        pgf::plot(outputDir + "/" + PlotName + "-2", v);
     }
     CATCH
 }

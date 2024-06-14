@@ -8,6 +8,11 @@
 
 namespace pgfplotter
 {
+    template<typename T>
+    using require_iterable = std::enable_if_t<std::is_same<decltype(std::begin(
+        std::declval<const T&>())), decltype(std::end(std::declval<const
+        T&>()))>::value>;
+
     std::array<std::vector<double>, 3> mesh_grid(const std::function<double(
         double, double)>& f, double xMin, double xMax, double yMin, double yMax,
         std::size_t res);
@@ -17,12 +22,8 @@ namespace pgfplotter
 
     class Plotter
     {
-        friend void plot_multiple(const std::string&, const Plotter&, const
-            Plotter&, bool);
-        friend void plot_multiple(const std::string&, const Plotter&, const
-            Plotter&, const Plotter&, bool);
-        friend void plot_multiple(const std::string&, const std::vector<
-            Plotter>&, bool);
+        friend void plot(const std::string&, const std::vector<const
+            Plotter*>&);
 
         static constexpr std::array<std::array<int, 3>, 5> _colorCycle = {{
             {  0,  57, 181},
@@ -32,12 +33,10 @@ namespace pgfplotter
             {255, 227,   0}
         }};
 
-        const std::string name;
-
-        std::string titleStr;
-        std::string xLabel;
-        std::string yLabel;
-        std::string zLabel;
+        std::string _title;
+        std::string _xLabel;
+        std::string _yLabel;
+        std::string _zLabel;
 
         std::vector<std::array<std::vector<double>, 3>> data;
         std::vector<std::vector<double>> surfaceX;
@@ -142,10 +141,10 @@ namespace pgfplotter
         static constexpr unsigned int Northwest = 5;
         static constexpr unsigned int Southwest = 6;
 
-        void title(const std::string& title);
-        void x_label(const std::string& xLabel);
-        void y_label(const std::string& yLabel);
-        void z_label(const std::string& zLabel);
+        void setTitle(const std::string& title);
+        void setXLabel(const std::string& xLabel);
+        void setYLabel(const std::string& yLabel);
+        void setZLabel(const std::string& zLabel);
 
         void line(const std::vector<double>& x, const std::vector<double>& y,
             const std::vector<double>& z, const std::string& name, const std::
@@ -451,7 +450,6 @@ namespace pgfplotter
         void axis_equal_image();
         void resize(double width, double height);
         void resize(double size);
-        void plot(const std::string& path, bool deleteData = false) const;
         void x_precision(int n);
         void y_precision(int n);
         void z_precision(int n);
@@ -475,12 +473,32 @@ namespace pgfplotter
         void bidirColormap();
     };
 
-    void plot_multiple(const std::string& path, const Plotter& p, const Plotter&
-        q, bool deleteData = false);
-    void plot_multiple(const std::string& path, const Plotter& p, const Plotter&
-        q, const Plotter& r, bool deleteData = false);
-    void plot_multiple(const std::string& path, const std::vector<Plotter>& p,
-        bool deleteData = false);
+    // Note: ".png" is automatically appended to plot path.
+    template<typename... Ts>
+    void plot(const std::string& path, const Plotter& p, Ts&&... q)
+    {
+        std::vector<const Plotter*> ptrs = {&p};
+        plot(path, ptrs, q...);
+    }
+    template<typename... Ts>
+    void plot(const std::string& path, std::vector<const Plotter*> ptrs, const
+        Plotter& p, Ts&&... q)
+    {
+        ptrs.push_back(&p);
+        plot(path, ptrs, q...);
+    }
+    template<typename T, require_iterable<T>* = nullptr>
+    void plot(const std::string& path, const T& p)
+    {
+        std::vector<const Plotter*> ptrs;
+        ptrs.reserve(p.size());
+        for(auto& n : p)
+        {
+            ptrs.push_back(&n);
+        }
+        plot(path, ptrs);
+    }
+    void plot(const std::string& path, const std::vector<const Plotter*>& ptrs);
 }
 
 #endif

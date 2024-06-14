@@ -66,4 +66,4 @@ build:
 	mkdir -p $@
 
 clean:
-	$(RM) test build/* output/*
+	$(RM) -r test build output

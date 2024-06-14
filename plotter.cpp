@@ -423,24 +423,24 @@ static const std::string src4 = "\\end{groupplot}" + endl +
 static const std::string src5 = "\\end{document}";
 static const std::string src7 = "" + endl;
 
-void pgfplotter::Plotter::title(const std::string& title)
+void pgfplotter::Plotter::setTitle(const std::string& title)
 {
-    titleStr = title;
+    _title = title;
 }
 
-void pgfplotter::Plotter::x_label(const std::string& xLabel)
+void pgfplotter::Plotter::setXLabel(const std::string& xLabel)
 {
-    this->xLabel = xLabel;
+    _xLabel = xLabel;
 }
 
-void pgfplotter::Plotter::y_label(const std::string& yLabel)
+void pgfplotter::Plotter::setYLabel(const std::string& yLabel)
 {
-    this->yLabel = yLabel;
+    _yLabel = yLabel;
 }
 
-void pgfplotter::Plotter::z_label(const std::string& zLabel)
+void pgfplotter::Plotter::setZLabel(const std::string& zLabel)
 {
-    this->zLabel = zLabel;
+    _zLabel = zLabel;
 }
 
 void pgfplotter::Plotter::line(const std::vector<double>& x, const std::vector<double>& y,
@@ -877,9 +877,9 @@ std::string pgfplotter::Plotter::plot_src(const std::string& path, int subplot) 
         src += ", /pgf/number format/sci";
     }
     src += "}, label style = {font = \\" + FontSize + "}, ylabel near ticks";
-    if(!zLabel.empty())
+    if(!_zLabel.empty())
     {
-        src += ", ylabel = {" + zLabel + "}";
+        src += ", ylabel = {" + _zLabel + "}";
     }
     src += "}";
 
@@ -1007,21 +1007,21 @@ std::string pgfplotter::Plotter::plot_src(const std::string& path, int subplot) 
             zMax);//TEMP
     }*/
 
-    if(!xLabel.empty())
+    if(!_xLabel.empty())
     {
-        src += ", xlabel = {" + xLabel + "}";
+        src += ", xlabel = {" + _xLabel + "}";
     }
-    if(!yLabel.empty())
+    if(!_yLabel.empty())
     {
-        src += ", ylabel = {" + yLabel + "}";
+        src += ", ylabel = {" + _yLabel + "}";
     }
-    if(!zLabel.empty())
+    if(!_zLabel.empty())
     {
-        src += ", zlabel = {" + zLabel + "}";
+        src += ", zlabel = {" + _zLabel + "}";
     }
-    if(!titleStr.empty())
+    if(!_title.empty())
     {
-        src += ", title = {\\" + TitleSize + " " + titleStr + "}";
+        src += ", title = {\\" + TitleSize + " " + _title + "}";
     }
     if(legendPos)
     {
@@ -1316,37 +1316,8 @@ std::string pgfplotter::Plotter::plot_src(const std::string& path, int subplot) 
     return src;
 }
 
-void pgfplotter::Plotter::plot(const std::string& path, bool deleteData) const
-{
-    const std::string src = src0 + src2a + "1" + src2bNoSep + plot_src(path, 0)
-        + src4 + src5;
-
-    compile(path, src, deleteData);
-}
-
-void pgfplotter::plot_multiple(const std::string& path, const pgfplotter::Plotter& p, const pgfplotter::Plotter& q,
-    bool deleteData)
-{
-    const bool b = p._noSep || q._noSep;
-    const std::string src = src0 + src2a + "2" + (b ? src2bNoSep : src2b) + p.
-        plot_src(path, 0) + q.plot_src(path, 1) + src4 + src5;
-
-    compile(path, src, deleteData);
-}
-
-void pgfplotter::plot_multiple(const std::string& path, const pgfplotter::Plotter& p, const pgfplotter::Plotter& q,
-    const pgfplotter::Plotter& r, bool deleteData)
-{
-    const bool b = p._noSep || q._noSep || r._noSep;
-    const std::string src = src0 + src2a + "3" + (b ? src2bNoSep : src2b) + p.
-        plot_src(path, 0) + q.plot_src(path, 1) + r.plot_src(path, 2) + src4 +
-        src5;
-
-    compile(path, src, deleteData);
-}
-
-void pgfplotter::plot_multiple(const std::string& path, const std::vector<pgfplotter::Plotter>& p, bool
-    deleteData)
+void pgfplotter::plot(const std::string& path, const std::vector<const
+    pgfplotter::Plotter*>& p)
 {
     if(p.empty())
     {
@@ -1358,16 +1329,16 @@ void pgfplotter::plot_multiple(const std::string& path, const std::vector<pgfplo
     bool b = false;
     for(const auto& n : p)
     {
-        b = b || n._noSep;
+        b = b || n->_noSep;
     }
 
     std::string src = src0 + src2a + std::to_string(p.size()) + (b ? src2bNoSep
         : src2b);
     for(std::size_t i = 0, n = p.size(); i < n; ++i)
     {
-        src += p[i].plot_src(path, i);
+        src += p[i]->plot_src(path, i);
     }
     src += src4 + src5;
 
-    compile(path, src, deleteData);
+    compile(path, src, false);
 }
