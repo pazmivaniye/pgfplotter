@@ -65,9 +65,9 @@ namespace pgfplotter
         char mark;
         double size;
         int spacing;
-        static constexpr MarkStyle Default()
+        static constexpr MarkStyle Point()
         {
-            return {'.', 1., 1};
+            return {'*', 0.5, 1};
         }
         static constexpr MarkStyle None()
         {
@@ -75,9 +75,18 @@ namespace pgfplotter
         }
         static constexpr MarkStyle Auto()
         {
-            return {-1, 0., 0};
+            return {-1, 1., 0};
         }
     };
+
+    static constexpr std::array<MarkStyle, 5> DefaultMarks =
+    {{
+        {'S', 2./3., 0},
+        {'*', 2./3., 0},
+        {'D', 2./3., 0},
+        {'|', 2./3., 0},
+        MarkStyle::None()
+    }};
 
     struct DrawStyle
     {
@@ -87,10 +96,12 @@ namespace pgfplotter
         double lineWidth;
         double opacity;
     };
-    static constexpr DrawStyle DefaultLine = {Color::Auto, MarkStyle::None(),
+    static constexpr DrawStyle BasicLine = {Color::Auto, MarkStyle::None(),
         LineStyle::Solid, 1., 1.};
-    static constexpr DrawStyle DefaultScatter = {Color::Auto, MarkStyle::
-        Default(), LineStyle::None, 1., 1.};
+    static constexpr DrawStyle BasicScatter = {Color::Auto, MarkStyle::Point(),
+        LineStyle::None, 1., 1.};
+    static constexpr DrawStyle Default = {Color::Auto, MarkStyle::Auto(),
+        LineStyle::Solid, 1., 1.};
 
     class Axis
     {
@@ -108,7 +119,7 @@ namespace pgfplotter
         std::vector<bool> matrixSurf;
         std::vector<unsigned int> numContours;
         std::vector<std::string> names;
-        std::vector<std::tuple<std::string, double, int>> markers;
+        std::vector<MarkStyle> markers;
         std::vector<std::array<int, 3>> colors;
         std::vector<LineStyle> lineStyles;
         std::vector<double> lineWidths;

@@ -153,21 +153,29 @@ static const std::string Suffix = "_plot_data";
 
 static std::string convert_marker(char marker)
 {
-    if(!marker)
+    if(marker <= 0)
     {
-        return "none";
+        throw std::runtime_error("Tried to convert unprintable marker.");
     }
     if(marker == '^')
     {
         return "triangle";
     }
-    if(marker == '.')
-    {
-        return "*, mark options = {scale = 0.5}";
-    }
     if(marker == 's')
     {
         return "square";
+    }
+    if(marker == 'S')
+    {
+        return "square*";
+    }
+    if(marker == 'd')
+    {
+        return "square, mark options = {rotate = 45, scale = 0.6}";
+    }
+    if(marker == 'D')
+    {
+        return "square*, mark options = {rotate = 45, scale = 0.6}";
     }
     return std::string() + marker;
 }
@@ -457,8 +465,7 @@ void pgfplotter::Axis::draw(const DrawStyle& style, const std::vector<double>&
     vector<double>& w, const std::string& name)
 {
     data.push_back({x, y, z, w});
-    markers.emplace_back(convert_marker(style.markStyle.mark), style.markStyle.
-        size, style.markStyle.spacing);
+    markers.push_back(style.markStyle);
     names.push_back(name);
     colors.push_back(style.color);
     lineStyles.push_back(style.lineStyle);
@@ -1133,7 +1140,6 @@ std::string pgfplotter::Axis::plot_src(const std::string& path, int subplot) con
         }
 
         const bool hasLines = lineStyles[i] != LineStyle::None;
-        const bool hasMarks = std::get<0>(markers[i]) != "none";
 
         src += is3D ? "\\addplot3+[" : "\\addplot+[";
         if(lineStyles[i] == LineStyle::Dashed)
@@ -1148,8 +1154,30 @@ std::string pgfplotter::Axis::plot_src(const std::string& path, int subplot) con
         {
             src += "only marks, ";
         }
-        src += "mark = " + std::get<0>(markers[i]) + ", mark size = " +
-            ToString(3.*std::get<1>(markers[i]));
+        if(markers[i].mark > 0)
+        {
+            src += "mark = " + convert_marker(markers[i].mark) + ", mark size ="
+                " " + ToString(3.*markers[i].size);
+            if(markers[i].spacing)
+            {
+                src += ", mark repeat = " + std::to_string(markers[i].spacing);
+            }
+        }
+        else if(markers[i].mark < 0)
+        {
+            const std::size_t idx = i%DefaultMarks.size();
+            src += "mark = " + convert_marker(DefaultMarks[idx].mark) + ", mark"
+                " size = " + ToString(3.*DefaultMarks[idx].size*markers[i].
+                size);
+            if(markers[i].spacing)
+            {
+                src += ", mark repeat = " + std::to_string(markers[i].spacing);
+            }
+        }
+        else
+        {
+            src += "mark = none";
+        }
         if(colors[i][0] >= 0)
         {
             src += ", rgb color = {" + std::to_string(colors[i][0]) + ", " +
@@ -1162,7 +1190,7 @@ std::string pgfplotter::Axis::plot_src(const std::string& path, int subplot) con
             {
                 src += ", mesh, point meta = explicit, shader = interp";
             }
-            if(hasMarks)
+            if(markers[i].mark)
             {
                 src += ", scatter, scatter src = explicit, scatter/use mapped c"
                     "olor = {draw = mapped color, fill = mapped color}";
