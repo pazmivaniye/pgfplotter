@@ -20,44 +20,101 @@ namespace pgfplotter
         double, double)>& f, double xMin, double xMax, double yMin, double yMax,
         std::size_t xRes, std::size_t yRes);
 
-    class Plotter
+    namespace Color
     {
-        friend void plot(const std::string&, const std::vector<const
-            Plotter*>&);
-
-        static constexpr std::array<std::array<int, 3>, 5> _colorCycle = {{
+        // These have uniformly increasing perceived lightness.
+        static constexpr std::array<std::array<int, 3>, 5> Defaults =
+        {{
             {  0,  57, 181},
             {202,  46,   0},
             { 44, 151, 225},
             {141, 202,  58},
             {255, 227,   0}
         }};
+        // Blue to white to red, with equal perceived lightness and saturation
+        // at both ends.
+        static constexpr std::array<std::array<int, 3>, 3> Bidir =
+        {{
+            { 10,  10, 143},
+            {255, 255, 255},
+            {160,  10,  10}
+        }};
+        static constexpr std::array<int, 3> Black = {};
+        static constexpr std::array<int, 3> DarkGray = {64, 64, 64};
+        static constexpr std::array<int, 3> Gray = {128, 128, 128};
+        static constexpr std::array<int, 3> LightGray = {191, 191, 191};
+        static constexpr std::array<int, 3> White = {255, 255, 255};
+        static constexpr std::array<int, 3> Red = {255, 0, 0};
+        static constexpr std::array<int, 3> Green = {0, 255, 0};
+        static constexpr std::array<int, 3> Blue = {0, 0, 255};
+        // Selects color from `Defaults`.
+        static constexpr std::array<int, 3> Auto = {-1};
+        static constexpr std::array<int, 3> FromX = {-2};
+        static constexpr std::array<int, 3> FromY = {-3};
+        static constexpr std::array<int, 3> FromZ = {-4};
+        static constexpr std::array<int, 3> FromW = {-5};
+    }
+
+    enum class LineStyle
+    {
+        Solid, Dashed, Dotted, None
+    };
+
+    struct MarkStyle
+    {
+        char mark;
+        double size;
+        int spacing;
+        static constexpr MarkStyle Default()
+        {
+            return {'.', 1., 1};
+        }
+        static constexpr MarkStyle None()
+        {
+            return {};
+        }
+        static constexpr MarkStyle Auto()
+        {
+            return {-1, 0., 0};
+        }
+    };
+
+    struct DrawStyle
+    {
+        std::array<int, 3> color;
+        MarkStyle markStyle;
+        LineStyle lineStyle;
+        double lineWidth;
+        double opacity;
+    };
+    static constexpr DrawStyle DefaultLine = {Color::Auto, MarkStyle::None(),
+        LineStyle::Solid, 1., 1.};
+    static constexpr DrawStyle DefaultScatter = {Color::Auto, MarkStyle::
+        Default(), LineStyle::None, 1., 1.};
+
+    class Axis
+    {
+        friend void plot(const std::string&, const std::vector<const Axis*>&);
 
         std::string _title;
         std::string _xLabel;
         std::string _yLabel;
         std::string _zLabel;
 
-        std::vector<std::array<std::vector<double>, 3>> data;
+        std::vector<std::array<std::vector<double>, 4>> data;
         std::vector<std::vector<double>> surfaceX;
         std::vector<std::vector<double>> surfaceY;
         std::vector<std::vector<double>> surfaceZ;
         std::vector<bool> matrixSurf;
         std::vector<unsigned int> numContours;
         std::vector<std::string> names;
-        std::vector<std::string> markers;
+        std::vector<std::tuple<std::string, double, int>> markers;
         std::vector<std::array<int, 3>> colors;
-        std::vector<unsigned int> lineStyles;
+        std::vector<LineStyle> lineStyles;
         std::vector<double> lineWidths;
         std::vector<double> opacities;
 
-        //TEMP
-        std::vector<double> circleX;
-        std::vector<double> circleY;
-        std::vector<double> circleR;
-        //TEMP
-
-        std::array<double, 2> viewAngles = {0.0, 90.0};
+        std::array<double, 2> _viewAngles = {0.0, 90.0};
 
         double _opacity = 1.0; // Should be per-surface (like `surfaceX`, etc.).
 
@@ -98,7 +155,7 @@ namespace pgfplotter
         bool yLog = false;
         bool zLog = false;
 
-        bool showColorbar = false;
+        bool _showColorbar = false;
 
         double xSpacing = 0.0;
         double ySpacing = 0.0;
@@ -121,19 +178,11 @@ namespace pgfplotter
     public:
         static constexpr std::array<int, 3> ColorCycle(std::size_t i)
         {
-            return _colorCycle[i%_colorCycle.size()];
+            return Color::Defaults[i%Color::Defaults.size()];
         }
 
         static std::string ToString(double x, unsigned int precision = 10);
 
-        static constexpr std::array<int, 3> Black = {};
-        static constexpr std::array<int, 3> DarkGray = {64, 64, 64};
-        static constexpr std::array<int, 3> Gray = {128, 128, 128};
-        static constexpr std::array<int, 3> LightGray = {191, 191, 191};
-        static constexpr std::array<int, 3> Red = {255, 0, 0};
-        static constexpr std::array<int, 3> Green = {0, 255, 0};
-        static constexpr std::array<int, 3> Blue = {0, 0, 255};
-        static constexpr std::array<int, 3> AutoColor = {-1, -1, -1};
         static constexpr unsigned int Fixed = 1;
         static constexpr unsigned int Sci = 2;
         static constexpr unsigned int Northeast = 3;
@@ -145,326 +194,54 @@ namespace pgfplotter
         void setXLabel(const std::string& xLabel);
         void setYLabel(const std::string& yLabel);
         void setZLabel(const std::string& zLabel);
+        void setWLabel(const std::string& zLabel);
 
-        void line(const std::vector<double>& x, const std::vector<double>& y,
-            const std::vector<double>& z, const std::string& name, const std::
-            array<int, 3>& color, double width);
-        void line(const std::vector<double>& x, const std::vector<double>& y,
-            const std::vector<double>& z, const std::array<int, 3>& color)
-        {
-            line(x, y, z, "", color, 1.);
-        }
-        void line(const std::vector<double>& x, const std::vector<double>& y, const
-            std::vector<double>& z, const std::string& name)
-        {
-            line(x, y, z, name, AutoColor, 1.);
-        }
-        void line(const std::vector<double>& x, const std::vector<double>& y, const
-            std::vector<double>& z)
-        {
-            line(x, y, z, "", AutoColor, 1.);
-        }
-        void line(const std::vector<double>& x, const std::vector<double>& y, const
-            std::string& name, const std::array<int, 3>& color, double width)
-        {
-            line(x, y, {}, name, color, width);
-        }
-        void line(const std::vector<double>& x, const std::vector<double>& y, const
-            std::string& name, const std::array<int, 3>& color)
-        {
-            line(x, y, {}, name, color, 1.);
-        }
-        void line(const std::vector<double>& x, const std::vector<double>& y, const
-            std::array<int, 3>& color)
-        {
-            line(x, y, {}, "", color, 1.);
-        }
-        void line(const std::vector<double>& x, const std::vector<double>& y, const
-            std::string& name)
-        {
-            line(x, y, {}, name, AutoColor, 1.);
-        }
-        void line(const std::vector<double>& x, const std::vector<double>& y)
-        {
-            line(x, y, {}, "", AutoColor, 1.);
-        }
-        // ...
+        // Either `z` (height) or `w` (meta) or both may be left empty.
+        void draw(const DrawStyle& style, const std::vector<double>& x, const
+            std::vector<double>& y, const std::vector<double>& z = {}, const
+            std::vector<double>& w = {}, const std::string& name = "");
 
-        void dashed(const std::vector<double>& x, const std::vector<double>& y,
-            const std::string& name, const std::array<int, 3>& color);
-        void dashed(const std::vector<double>& x, const std::vector<double>& y,
-            const std::array<int, 3>& color)
-        {
-            dashed(x, y, "", color);
-        }
-        void dashed(const std::vector<double>& x, const std::vector<double>& y,
-            const std::string& name)
-        {
-            dashed(x, y, name, AutoColor);
-        }
-        void dashed(const std::vector<double>& x, const std::vector<double>& y)
-        {
-            dashed(x, y, "", AutoColor);
-        }
-
-        void dotted(const std::vector<double>& x, const std::vector<double>& y,
-            const std::string& name, const std::array<int, 3>& color);
-        void dotted(const std::vector<double>& x, const std::vector<double>& y,
-            const std::array<int, 3>& color)
-        {
-            dotted(x, y, "", color);
-        }
-        void dotted(const std::vector<double>& x, const std::vector<double>& y,
-            const std::string& name)
-        {
-            dotted(x, y, name, AutoColor);
-        }
-        void dotted(const std::vector<double>& x, const std::vector<double>& y)
-        {
-            dotted(x, y, "", AutoColor);
-        }
-
-        void scatter(const std::vector<double>& x, const std::vector<double>& y,
-            const std::vector<double>& z, char marker, const std::string& name,
-            const std::array<int, 3>& color, double opacity);
-        void scatter(const std::vector<double>& x, const std::vector<double>& y,
-            char marker, const std::string& name, const std::array<int, 3>& color)
-        {
-            scatter(x, y, {}, marker, name, color, 1.);
-        }
-        void scatter(const std::vector<double>& x, const std::vector<double>& y,
-            char marker, const std::array<int, 3>& color)
-        {
-            scatter(x, y, marker, "", color);
-        }
-        void scatter(const std::vector<double>& x, const std::vector<double>& y,
-            char marker, const std::string& name)
-        {
-            scatter(x, y, marker, name, AutoColor);
-        }
-        void scatter(const std::vector<double>& x, const std::vector<double>& y,
-            char marker)
-        {
-            scatter(x, y, marker, "", AutoColor);
-        }
-        void scatter(const std::vector<double>& x, const std::vector<double>& y,
-            const std::string& name, const std::array<int, 3>& color)
-        {
-            scatter(x, y, 'o', name, color);
-        }
-        void scatter(const std::vector<double>& x, const std::vector<double>& y,
-            const std::array<int, 3>& color)
-        {
-            scatter(x, y, 'o', "", color);
-        }
-        void scatter(const std::vector<double>& x, const std::vector<double>& y,
-            const std::string& name)
-        {
-            scatter(x, y, 'o', name, AutoColor);
-        }
-        void scatter(const std::vector<double>& x, const std::vector<double>& y)
-        {
-            scatter(x, y, 'o', "", AutoColor);
-        }
-
-        void point(double x, double y, char marker, const std::string& name, const
-            std::array<int, 3>& color)
-        {
-            scatter({x}, {y}, marker, name, color);
-        }
-        // ...
-        void point(double x, double y, char marker, const std::array<int, 3>& color)
-        {
-            point(x, y, marker, std::string{}, color);
-        }
-        void point(double x, double y, char marker, const std::string& name)
-        {
-            point(x, y, marker, name, AutoColor);
-        }
-        // ...
-        void point(double x, double y, const std::array<int, 3>& color)
-        {
-            point(x, y, '.', std::string{}, color);
-        }
-        // ...
-        void point(double x, double y, char marker)
-        {
-            point(x, y, marker, std::string{}, AutoColor);
-        }
-        // ...
-        void point(double x, double y)
-        {
-            point(x, y, '.', std::string{}, AutoColor);
-        }
-        template<typename T>
-        void point(const T& v, char marker, const std::string& name, const std::
-            array<int, 3>& color)
-        {
-            point(v[0], v[1], marker, name, color);
-        }
-        // ...
-        template<typename T>
-        void point(const T& v, char marker, const std::array<int, 3>& color)
-        {
-            point(v[0], v[1], marker, std::string{}, color);
-        }
-        // ...
-        template<typename T>
-        void point(const T& v, char marker)
-        {
-            point(v[0], v[1], marker, std::string{}, AutoColor);
-        }
-        // ...
-        template<typename T>
-        void point(const T& v)
-        {
-            point(v[0], v[1], '.', std::string{}, AutoColor);
-        }
-
-        void polar_line(const std::vector<double>& x, const std::vector<double>&
-            y, const std::string& name, const std::array<int, 3>& color);
-        // ...
-        void polar_line(const std::vector<double>& x, const std::vector<double>&
-            y, const std::string& name)
-        {
-            polar_line(x, y, name, AutoColor);
-        }
-        void polar_line(const std::vector<double>& x, const std::vector<double>&
-            y, const std::array<int, 3>& color)
-        {
-            polar_line(x, y, std::string{}, color);
-        }
-        void polar_line(const std::vector<double>& x, const std::vector<double>&
-            y)
-        {
-            polar_line(x, y, std::string{}, AutoColor);
-        }
-
-        void polar_scatter(const std::vector<double>& x, const std::vector<double>&
-            y, char marker, const std::string& name, const std::array<int, 3>&
-            color);
-        // ...
-        void polar_scatter(const std::vector<double>& x, const std::vector<double>&
-            y, char marker, const std::string& name)
-        {
-            polar_scatter(x, y, marker, name, AutoColor);
-        }
-        void polar_scatter(const std::vector<double>& x, const std::vector<double>&
-            y, char marker, const std::array<int, 3>& color)
-        {
-            polar_scatter(x, y, marker, std::string{}, color);
-        }
-        void polar_scatter(const std::vector<double>& x, const std::vector<double>&
-            y, const std::string& name, const std::array<int, 3>& color)
-        {
-            polar_scatter(x, y, 'o', name, color);
-        }
-        void polar_scatter(const std::vector<double>& x, const std::vector<double>&
-            y, const std::array<int, 3>& color)
-        {
-            polar_scatter(x, y, 'o', std::string{}, color);
-        }
-        void polar_scatter(const std::vector<double>& x, const std::vector<double>&
-            y, const std::string& name)
-        {
-            polar_scatter(x, y, 'o', name, AutoColor);
-        }
-        void polar_scatter(const std::vector<double>& x, const std::vector<double>&
-            y, char marker)
-        {
-            polar_scatter(x, y, marker, std::string{}, AutoColor);
-        }
-        void polar_scatter(const std::vector<double>& x, const std::vector<double>&
-            y)
-        {
-            polar_scatter(x, y, 'o', std::string{}, AutoColor);
-        }
-
-        void stairs(const std::vector<double>& x, const std::vector<double>& y,
-            const std::string& name, const std::array<int, 3>& color);
-        void stairs(const std::vector<double>& x, const std::vector<double>& y,
-            const std::array<int, 3>& color)
-        {
-            stairs(x, y, "", color);
-        }
-        void stairs(const std::vector<double>& x, const std::vector<double>& y,
-            const std::string& name)
-        {
-            stairs(x, y, name, AutoColor);
-        }
-        void stairs(const std::vector<double>& x, const std::vector<double>& y)
-        {
-            stairs(x, y, "", AutoColor);
-        }
-
-        void dashed_stairs(const std::vector<double>& x, const std::vector<double>&
-            y, const std::string& name, const std::array<int, 3>& color);
-        void dashed_stairs(const std::vector<double>& x, const std::vector<double>&
-            y, const std::array<int, 3>& color)
-        {
-            dashed_stairs(x, y, "", color);
-        }
-        void dashed_stairs(const std::vector<double>& x, const std::vector<double>&
-            y, const std::string& name)
-        {
-            dashed_stairs(x, y, name, AutoColor);
-        }
-        void dashed_stairs(const std::vector<double>& x, const std::vector<double>&
-            y)
-        {
-            dashed_stairs(x, y, "", AutoColor);
-        }
-
-        // ...
-        void surf(const std::vector<double>& x, const std::vector<double>& y, const
-            std::vector<double>& z, const std::string& name = "");
-        // ...
-
-        // ...
+        void surf(const std::vector<double>& x, const std::vector<double>& y,
+            const std::vector<double>& z, const std::string& name = "");
         void contour(const std::vector<double>& x, const std::vector<double>& y,
             const std::vector<double>& z, unsigned int contours = 5, const std::
             string& name = "");
-        // ...
-
-        // ...
         void matrix(const std::vector<double>& x, const std::vector<double>& y,
             const std::vector<double>& z, const std::string& name = "");
-        // ...
-
-        //TEMP
-        void circles(const std::vector<double>& x, const std::vector<double>& y,
-            const std::vector<double>& r);
-        //TEMP
 
         void legend(unsigned int location = Northeast);
         void squeeze();
         void squeeze_x();
         void squeeze_y();
-        void x_min(double x);
-        void x_max(double x);
-        void y_min(double y);
-        void y_max(double y);
-        void z_min(double z);
-        void z_max(double z);
+        void setXMin(double x);
+        void setXMax(double x);
+        void setYMin(double y);
+        void setYMax(double y);
+        void setZMin(double z);
+        void setZMax(double z);
+        void setWMin(double w);
+        void setWMax(double w);
         void axis_equal();
         void axis_equal_image();
         void resize(double width, double height);
         void resize(double size);
-        void x_precision(int n);
-        void y_precision(int n);
-        void z_precision(int n);
-        void x_format(unsigned int mode);
-        void y_format(unsigned int mode);
-        void z_format(unsigned int mode);
+        void setXPrecision(int n);
+        void setYPrecision(int n);
+        void setZPrecision(int n);
+        void setWPrecision(int n);
+        void setXFormat(unsigned int mode);
+        void setYFormat(unsigned int mode);
+        void setZFormat(unsigned int mode);
+        void setWFormat(unsigned int mode);
         void x_log();
         void y_log();
         void z_log();
-        void colorbar();
+        void showColorbar();
         void scale_x_spacing(double n);
         void scale_y_spacing(double n);
         void scale_z_spacing(double n);
         void x_offset(double n);
-        void view(double a, double b);
+        void setView(double az, double el);
         void opacity(double n);
         void noSep();
         void xTicks(const std::vector<double>& locations, const std::vector<
@@ -475,14 +252,14 @@ namespace pgfplotter
 
     // Note: ".png" is automatically appended to plot path.
     template<typename... Ts>
-    void plot(const std::string& path, const Plotter& p, Ts&&... q)
+    void plot(const std::string& path, const Axis& p, Ts&&... q)
     {
-        std::vector<const Plotter*> ptrs = {&p};
+        std::vector<const Axis*> ptrs = {&p};
         plot(path, ptrs, q...);
     }
     template<typename... Ts>
-    void plot(const std::string& path, std::vector<const Plotter*> ptrs, const
-        Plotter& p, Ts&&... q)
+    void plot(const std::string& path, std::vector<const Axis*> ptrs, const
+        Axis& p, Ts&&... q)
     {
         ptrs.push_back(&p);
         plot(path, ptrs, q...);
@@ -490,7 +267,7 @@ namespace pgfplotter
     template<typename T, require_iterable<T>* = nullptr>
     void plot(const std::string& path, const T& p)
     {
-        std::vector<const Plotter*> ptrs;
+        std::vector<const Axis*> ptrs;
         ptrs.reserve(p.size());
         for(auto& n : p)
         {
@@ -498,7 +275,7 @@ namespace pgfplotter
         }
         plot(path, ptrs);
     }
-    void plot(const std::string& path, const std::vector<const Plotter*>& ptrs);
+    void plot(const std::string& path, const std::vector<const Axis*>& ptrs);
 }
 
 #endif

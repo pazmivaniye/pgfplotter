@@ -153,6 +153,10 @@ static const std::string Suffix = "_plot_data";
 
 static std::string convert_marker(char marker)
 {
+    if(!marker)
+    {
+        return "none";
+    }
     if(marker == '^')
     {
         return "triangle";
@@ -173,7 +177,7 @@ static std::string convert_marker(char marker)
 static const std::string endl = "\n";
 
 // Convert numbers to strings without sacrificing precision.
-std::string pgfplotter::Plotter::ToString(double x, unsigned int precision)
+std::string pgfplotter::Axis::ToString(double x, unsigned int precision)
 {
     std::stringstream ss;
     ss << std::setprecision(precision) << x;
@@ -423,163 +427,47 @@ static const std::string src4 = "\\end{groupplot}" + endl +
 static const std::string src5 = "\\end{document}";
 static const std::string src7 = "" + endl;
 
-void pgfplotter::Plotter::setTitle(const std::string& title)
+void pgfplotter::Axis::setTitle(const std::string& title)
 {
     _title = title;
 }
 
-void pgfplotter::Plotter::setXLabel(const std::string& xLabel)
+void pgfplotter::Axis::setXLabel(const std::string& xLabel)
 {
     _xLabel = xLabel;
 }
 
-void pgfplotter::Plotter::setYLabel(const std::string& yLabel)
+void pgfplotter::Axis::setYLabel(const std::string& yLabel)
 {
     _yLabel = yLabel;
 }
 
-void pgfplotter::Plotter::setZLabel(const std::string& zLabel)
+void pgfplotter::Axis::setZLabel(const std::string& zLabel)
 {
     _zLabel = zLabel;
 }
 
-void pgfplotter::Plotter::line(const std::vector<double>& x, const std::vector<double>& y,
-    const std::vector<double>& z, const std::string& name, const std::array<int,
-    3>& color, double width)
+void pgfplotter::Axis::setWLabel(const std::string& wLabel)
 {
-    data.push_back({x, y, z});
-    markers.emplace_back();
+    setZLabel(wLabel); //TEMP - separate z & w
+}
+
+void pgfplotter::Axis::draw(const DrawStyle& style, const std::vector<double>&
+    x, const std::vector<double>& y, const std::vector<double>& z, const std::
+    vector<double>& w, const std::string& name)
+{
+    data.push_back({x, y, z, w});
+    markers.emplace_back(convert_marker(style.markStyle.mark), style.markStyle.
+        size, style.markStyle.spacing);
     names.push_back(name);
-    colors.push_back(color);
-    lineStyles.push_back(0);
-    lineWidths.push_back(width);
-    opacities.push_back(1.);
+    colors.push_back(style.color);
+    lineStyles.push_back(style.lineStyle);
+    lineWidths.push_back(style.lineWidth);
+    opacities.push_back(style.opacity);
 }
 
-void pgfplotter::Plotter::dashed(const std::vector<double>& x, const std::vector<double>& y,
-    const std::string& name, const std::array<int, 3>& color)
-{
-    data.push_back({x, y, {}});
-    markers.emplace_back();
-    names.push_back(name);
-    colors.push_back(color);
-    lineStyles.push_back(1);
-    lineWidths.push_back(1.);
-    opacities.push_back(1.);
-}
-
-void pgfplotter::Plotter::dotted(const std::vector<double>& x, const std::vector<double>& y,
-    const std::string& name, const std::array<int, 3>& color)
-{
-    data.push_back({x, y, {}});
-    markers.emplace_back();
-    names.push_back(name);
-    colors.push_back(color);
-    lineStyles.push_back(2);
-    lineWidths.push_back(1.);
-    opacities.push_back(1.);
-}
-
-void pgfplotter::Plotter::scatter(const std::vector<double>& x, const std::vector<double>&
-    y, const std::vector<double>& z, char marker, const std::string& name, const
-    std::array<int, 3>& color, double opacity)
-{
-    data.push_back({x, y, z});
-    markers.push_back(convert_marker(marker));
-    names.push_back(name);
-    colors.push_back(color);
-    lineStyles.push_back(0);
-    lineWidths.push_back(1.);
-    opacities.push_back(opacity);
-}
-
-void pgfplotter::Plotter::polar_line(const std::vector<double>& r, const std::vector<
-    double>& theta, const std::string& name, const std::array<int, 3>& color)
-{
-    const std::size_t n = theta.size();
-    std::vector<double> x(n);
-    std::vector<double> y(n);
-    for(std::size_t i = 0; i < n; ++i)
-    {
-        x[i] = r[i]*std::cos(theta[i]);
-        y[i] = r[i]*std::sin(theta[i]);
-    }
-    data.push_back({x, y, {}});
-    markers.emplace_back();
-    names.push_back(name);
-    colors.push_back(color);
-    lineStyles.push_back(0);
-    lineWidths.push_back(1.);
-    opacities.push_back(1.);
-}
-
-void pgfplotter::Plotter::polar_scatter(const std::vector<double>& r, const std::vector<
-    double>& theta, char marker, const std::string& name, const std::array<int,
-    3>& color)
-{
-    const std::size_t n = theta.size();
-    std::vector<double> x(n);
-    std::vector<double> y(n);
-    for(std::size_t i = 0; i < n; ++i)
-    {
-        x[i] = r[i]*std::cos(theta[i]);
-        y[i] = r[i]*std::sin(theta[i]);
-    }
-    data.push_back({x, y, {}});
-    markers.push_back(convert_marker(marker));
-    names.push_back(name);
-    colors.push_back(color);
-    lineStyles.push_back(0);
-    lineWidths.push_back(1.);
-    opacities.push_back(1.);
-}
-
-void pgfplotter::Plotter::stairs(const std::vector<double>& x, const std::vector<double>& y,
-    const std::string& name, const std::array<int, 3>& color)
-{
-    const std::size_t n = x.size();
-    std::vector<double> x1(2*n);
-    std::vector<double> y1(2*n);
-    y1[0] = y[0];
-    for(std::size_t i = 0; i + 1 < n; ++i)
-    {
-        y1[2*i + 1] = y[i];
-        y1[2*i + 2] = y[i];
-    }
-    y1[2*n - 1] = y[n - 1];
-    for(std::size_t i = 0; i < n; ++i)
-    {
-        x1[2*i] = x[i];
-        x1[2*i + 1] = x[i];
-    }
-
-    line(x1, y1, name, color);
-}
-
-void pgfplotter::Plotter::dashed_stairs(const std::vector<double>& x, const std::vector<
-    double>& y, const std::string& name, const std::array<int, 3>& color)
-{
-    const std::size_t n = x.size();
-    std::vector<double> x1(2*n);
-    std::vector<double> y1(2*n);
-    y1[0] = y[0];
-    for(std::size_t i = 0; i + 1 < n; ++i)
-    {
-        y1[2*i + 1] = y[i];
-        y1[2*i + 2] = y[i];
-    }
-    y1[2*n - 1] = y[n - 1];
-    for(std::size_t i = 0; i < n; ++i)
-    {
-        x1[2*i] = x[i];
-        x1[2*i + 1] = x[i];
-    }
-
-    dashed(x1, y1, name, color);
-}
-
-void pgfplotter::Plotter::surf(const std::vector<double>& x, const std::vector<double>& y,
-    const std::vector<double>& z, const std::string& name)
+void pgfplotter::Axis::surf(const std::vector<double>& x, const std::vector<
+    double>& y, const std::vector<double>& z, const std::string& name)
 {
     surfaceX.push_back(x);
     surfaceY.push_back(y);
@@ -589,9 +477,9 @@ void pgfplotter::Plotter::surf(const std::vector<double>& x, const std::vector<d
     matrixSurf.push_back(false);
 }
 
-void pgfplotter::Plotter::contour(const std::vector<double>& x, const std::vector<double>&
-    y, const std::vector<double>& z, unsigned int contours, const std::string&
-    name)
+void pgfplotter::Axis::contour(const std::vector<double>& x, const std::vector<
+    double>& y, const std::vector<double>& z, unsigned int contours, const std::
+    string& name)
 {
     surfaceX.push_back(x);
     surfaceY.push_back(y);
@@ -601,8 +489,8 @@ void pgfplotter::Plotter::contour(const std::vector<double>& x, const std::vecto
     matrixSurf.push_back(false);
 }
 
-void pgfplotter::Plotter::matrix(const std::vector<double>& x, const std::vector<double>& y,
-    const std::vector<double>& z, const std::string& name)
+void pgfplotter::Axis::matrix(const std::vector<double>& x, const std::vector<
+    double>& y, const std::vector<double>& z, const std::string& name)
 {
     surfaceX.push_back(x);
     surfaceY.push_back(y);
@@ -612,96 +500,96 @@ void pgfplotter::Plotter::matrix(const std::vector<double>& x, const std::vector
     matrixSurf.push_back(true);
 }
 
-//TEMP
-void pgfplotter::Plotter::circles(const std::vector<double>& x, const std::vector<double>&
-    y, const std::vector<double>& r)
-{
-    circleX.insert(circleX.end(), x.begin(), x.end());
-    circleY.insert(circleY.end(), y.begin(), y.end());
-    circleR.insert(circleR.end(), r.begin(), r.end());
-}
-//TEMP
-
-void pgfplotter::Plotter::legend(unsigned int location)
+void pgfplotter::Axis::legend(unsigned int location)
 {
     legendPos = location;
 }
 
-void pgfplotter::Plotter::squeeze()
+void pgfplotter::Axis::squeeze()
 {
     xSqueeze = true;
     ySqueeze = true;
 }
 
-void pgfplotter::Plotter::squeeze_x()
+void pgfplotter::Axis::squeeze_x()
 {
     xSqueeze = true;
 }
 
-void pgfplotter::Plotter::squeeze_y()
+void pgfplotter::Axis::squeeze_y()
 {
     ySqueeze = true;
 }
 
-void pgfplotter::Plotter::x_min(double x)
+void pgfplotter::Axis::setXMin(double x)
 {
     xMinSet = true;
     xMin = x;
 }
 
-void pgfplotter::Plotter::x_max(double x)
+void pgfplotter::Axis::setXMax(double x)
 {
     xMaxSet = true;
     xMax = x;
 }
 
-void pgfplotter::Plotter::y_min(double y)
+void pgfplotter::Axis::setYMin(double y)
 {
     yMinSet = true;
     yMin = y;
 }
 
-void pgfplotter::Plotter::y_max(double y)
+void pgfplotter::Axis::setYMax(double y)
 {
     yMaxSet = true;
     yMax = y;
 }
 
-void pgfplotter::Plotter::z_min(double z)
+void pgfplotter::Axis::setZMin(double z)
 {
     zMinSet = true;
     zMin = z;
 }
 
-void pgfplotter::Plotter::z_max(double z)
+void pgfplotter::Axis::setZMax(double z)
 {
     zMaxSet = true;
     zMax = z;
 }
 
-void pgfplotter::Plotter::axis_equal()
+void pgfplotter::Axis::setWMin(double w)
+{
+    setZMin(w); //TEMP - separate z & w
+}
+
+void pgfplotter::Axis::setWMax(double w)
+{
+    setZMax(w); //TEMP - separate z & w
+}
+
+void pgfplotter::Axis::axis_equal()
 {
     axisEqual = true;
 }
 
-void pgfplotter::Plotter::axis_equal_image()
+void pgfplotter::Axis::axis_equal_image()
 {
     axisEqualImage = true;
 }
 
-void pgfplotter::Plotter::resize(double width, double height)
+void pgfplotter::Axis::resize(double width, double height)
 {
     relWidth = width;
     relHeight = height;
 }
 
-void pgfplotter::Plotter::resize(double size)
+void pgfplotter::Axis::resize(double size)
 {
     relWidth = size;
     relHeight = size;
 }
 
-void pgfplotter::Plotter::x_precision(int n)
+void pgfplotter::Axis::setXPrecision(int n)
 {
     if(n < 0)
     {
@@ -710,7 +598,7 @@ void pgfplotter::Plotter::x_precision(int n)
     xPrecision = n;
 }
 
-void pgfplotter::Plotter::y_precision(int n)
+void pgfplotter::Axis::setYPrecision(int n)
 {
     if(n < 0)
     {
@@ -719,7 +607,7 @@ void pgfplotter::Plotter::y_precision(int n)
     yPrecision = n;
 }
 
-void pgfplotter::Plotter::z_precision(int n)
+void pgfplotter::Axis::setZPrecision(int n)
 {
     if(n < 0)
     {
@@ -728,77 +616,87 @@ void pgfplotter::Plotter::z_precision(int n)
     zPrecision = n;
 }
 
-void pgfplotter::Plotter::x_format(unsigned int mode)
+void pgfplotter::Axis::setWPrecision(int n)
+{
+    setZPrecision(n); //TEMP - separate z & w
+}
+
+void pgfplotter::Axis::setXFormat(unsigned int mode)
 {
     xFormat = mode;
 }
 
-void pgfplotter::Plotter::y_format(unsigned int mode)
+void pgfplotter::Axis::setYFormat(unsigned int mode)
 {
     yFormat = mode;
 }
 
-void pgfplotter::Plotter::z_format(unsigned int mode)
+void pgfplotter::Axis::setZFormat(unsigned int mode)
 {
     zFormat = mode;
 }
 
-void pgfplotter::Plotter::x_log()
+void pgfplotter::Axis::setWFormat(unsigned int mode)
+{
+    zFormat = mode; //TEMP - separate z & w
+}
+
+void pgfplotter::Axis::x_log()
 {
     xLog = true;
 }
 
-void pgfplotter::Plotter::y_log()
+void pgfplotter::Axis::y_log()
 {
     yLog = true;
 }
 
-void pgfplotter::Plotter::z_log()
+void pgfplotter::Axis::z_log()
 {
     zLog = true;
 }
 
-void pgfplotter::Plotter::colorbar()
+void pgfplotter::Axis::showColorbar()
 {
-    showColorbar = true;
+    _showColorbar = true;
 }
 
-void pgfplotter::Plotter::scale_x_spacing(double n)
+void pgfplotter::Axis::scale_x_spacing(double n)
 {
     xSpacing = n;
 }
 
-void pgfplotter::Plotter::scale_y_spacing(double n)
+void pgfplotter::Axis::scale_y_spacing(double n)
 {
     ySpacing = n;
 }
 
-void pgfplotter::Plotter::scale_z_spacing(double n)
+void pgfplotter::Axis::scale_z_spacing(double n)
 {
     zSpacing = n;
 }
 
-void pgfplotter::Plotter::x_offset(double n)
+void pgfplotter::Axis::x_offset(double n)
 {
     xOffset = n;
 }
 
-void pgfplotter::Plotter::view(double a, double b)
+void pgfplotter::Axis::setView(double az, double el)
 {
-    viewAngles = {a, b};
+    _viewAngles = {az, el};
 }
 
-void pgfplotter::Plotter::opacity(double n)
+void pgfplotter::Axis::opacity(double n)
 {
     _opacity = n;
 }
 
-void pgfplotter::Plotter::noSep()
+void pgfplotter::Axis::noSep()
 {
     _noSep = true;
 }
 
-void pgfplotter::Plotter::xTicks(const std::vector<double>& locations, const std::vector<
+void pgfplotter::Axis::xTicks(const std::vector<double>& locations, const std::vector<
     std::string>& labels, bool rotate)
 {
     _xTicks = locations;
@@ -806,17 +704,17 @@ void pgfplotter::Plotter::xTicks(const std::vector<double>& locations, const std
     _rotateXTickLabels = rotate;
 }
 
-void pgfplotter::Plotter::bgBands(const std::vector<double>& transitions)
+void pgfplotter::Axis::bgBands(const std::vector<double>& transitions)
 {
     _bgBands = transitions;
 }
 
-void pgfplotter::Plotter::bidirColormap()
+void pgfplotter::Axis::bidirColormap()
 {
     _bidirColormap = true;
 }
 
-std::string pgfplotter::Plotter::plot_src(const std::string& path, int subplot) const
+std::string pgfplotter::Axis::plot_src(const std::string& path, int subplot) const
 {
     if(path.empty())
     {
@@ -855,9 +753,9 @@ std::string pgfplotter::Plotter::plot_src(const std::string& path, int subplot) 
         "= ";
     src += _bidirColormap ? "bidir" : "viridis";
     src += ", every axis plot/.append style = {ultra thick}, view = {" +
-        ToString(viewAngles[0]) + "}{" + ToString(viewAngles[1]) + "}, clip mod"
-        "e = individual, colorbar style = {font = \\" + FontSize + ", y tick la"
-        "bel style = {";
+        ToString(_viewAngles[0]) + "}{" + ToString(_viewAngles[1]) + "}, clip m"
+        "ode = individual, colorbar style = {font = \\" + FontSize + ", y tick "
+        "label style = {";
     if(zPrecision >= 0)
     {
         src += ", /pgf/number format/precision = " + ToString(zPrecision) +
@@ -921,7 +819,7 @@ std::string pgfplotter::Plotter::plot_src(const std::string& path, int subplot) 
             "res{\\pgfmathresult*" + ToString(zSpacing) + "}}";
     }
 
-    if(showColorbar)
+    if(_showColorbar)
     {
         src += ", colorbar";
     }
@@ -987,7 +885,7 @@ std::string pgfplotter::Plotter::plot_src(const std::string& path, int subplot) 
     // Z/meta max/min don't seem to affect contour placement in contour plots.
     if(zMinSet)
     {
-        if(viewAngles[0] != 0. || viewAngles[1] != 90.)
+        if(_viewAngles[0] != 0. || _viewAngles[1] != 90.)
         {
             src += ", zmin = " + ToString(zMin);
         }
@@ -995,7 +893,7 @@ std::string pgfplotter::Plotter::plot_src(const std::string& path, int subplot) 
     }
     if(zMaxSet)
     {
-        if(viewAngles[0] != 0. || viewAngles[1] != 90.)
+        if(_viewAngles[0] != 0. || _viewAngles[1] != 90.)
         {
             src += ", zmax = " + ToString(zMax);
         }
@@ -1058,7 +956,7 @@ std::string pgfplotter::Plotter::plot_src(const std::string& path, int subplot) 
         src += ", axis equal image";
     }
     src += src1;
-    if(!viewAngles[0] && !viewAngles[1])
+    if(!_viewAngles[0] && !_viewAngles[1])
     {
         src += ", xlabel near ticks, ylabel near ticks";
     }
@@ -1168,8 +1066,8 @@ std::string pgfplotter::Plotter::plot_src(const std::string& path, int subplot) 
         const std::size_t numPoints = surfaceX[i].size();
         if(surfaceY[i].size() != numPoints || surfaceZ[i].size() != numPoints)
         {
-            throw std::runtime_error("Number of points in x, y and z must match"
-                ".");
+            throw std::runtime_error("Number of points in x, y, and z must matc"
+                "h.");
         }
 
         std::size_t numRows = 1;
@@ -1231,6 +1129,7 @@ std::string pgfplotter::Plotter::plot_src(const std::string& path, int subplot) 
     {
         const std::size_t numPoints = data[i][0].size();
         const bool is3D = !data[i][2].empty();
+        const bool hasMeta = !data[i][3].empty();
         if(data[i][1].size() != numPoints)
         {
             throw std::runtime_error("Number of points in x and y must match.");
@@ -1239,33 +1138,46 @@ std::string pgfplotter::Plotter::plot_src(const std::string& path, int subplot) 
         {
             throw std::runtime_error("Number of points in x and z must match.");
         }
+        if(hasMeta && data[i][3].size() != numPoints)
+        {
+            throw std::runtime_error("Number of points in x and w must match.");
+        }
+
+        const bool hasLines = lineStyles[i] != LineStyle::None;
+        const bool hasMarks = std::get<0>(markers[i]) != "none";
 
         src += is3D ? "\\addplot3+[" : "\\addplot+[";
-        if(lineStyles[i] == 1)
+        if(lineStyles[i] == LineStyle::Dashed)
         {
             src += "densely dashed, ";
         }
-        else if(lineStyles[i] == 2)
+        else if(lineStyles[i] == LineStyle::Dotted)
         {
             src += "densely dotted, ";
         }
-        /*if(names[i].empty())
+        else if(lineStyles[i] == LineStyle::None)
         {
-            src += "forget plot, ";
-        }*/
-        if(!markers[i].empty())
-        {
-            src += "mark = " + markers[i] + ", mark size = 3, only marks";
+            src += "only marks, ";
         }
-        else
-        {
-            src += "mark = none";
-        }
+        src += "mark = " + std::get<0>(markers[i]) + ", mark size = " +
+            ToString(3.*std::get<1>(markers[i]));
         if(colors[i][0] >= 0)
         {
             src += ", rgb color = {" + std::to_string(colors[i][0]) + ", " +
                 std::to_string(colors[i][1]) + ", " + std::to_string(colors[i][
                 2]) + "}";
+        }
+        else if(colors[i][0] == Color::FromW[0])
+        {
+            if(hasLines)
+            {
+                src += ", mesh, point meta = explicit, shader = interp";
+            }
+            if(hasMarks)
+            {
+                src += ", scatter, scatter src = explicit, scatter/use mapped c"
+                    "olor = {draw = mapped color, fill = mapped color}";
+            }
         }
         src += ", fill opacity = " + std::to_string(opacities[i]) +
             ", draw opacity = " + std::to_string(opacities[i]);
@@ -1275,7 +1187,8 @@ std::string pgfplotter::Plotter::plot_src(const std::string& path, int subplot) 
         }
         const std::string dataFile = std::to_string(subplot) + "." + std::
             to_string(i) + ".data";
-        src += "] table {" + dataFile + src3;
+        src += "] table" + std::string(hasMeta ? "[meta = w]" : "") + " {" +
+            dataFile + src3;
         const std::string dataPath = path + Suffix + "/" + dataFile;
         std::ofstream out(dataPath);
         if(!out)
@@ -1283,11 +1196,13 @@ std::string pgfplotter::Plotter::plot_src(const std::string& path, int subplot) 
             throw std::runtime_error("Failed to open temporary output file \"" +
                 dataPath + "\".");
         }
-        out << "x y" << (is3D ? " z" : "") << std::endl;
+        out << "x y" << (is3D ? " z" : "") << (hasMeta ? " w" : "") << std::
+            endl;
         for(std::size_t j = 0; j < numPoints; ++j)
         {
             out << ToString(data[i][0][j]) << " " << ToString(data[i][1][j]) <<
-                (is3D ? " " + ToString(data[i][2][j]) : "") << std::endl;
+                (is3D ? " " + ToString(data[i][2][j]) : "") << (hasMeta ? " " +
+                ToString(data[i][3][j]) : "") << std::endl;
         }
     }
 
@@ -1304,20 +1219,11 @@ std::string pgfplotter::Plotter::plot_src(const std::string& path, int subplot) 
         src += "}" + endl;
     }
 
-    //TEMP
-    for(std::size_t i = 0; i < circleX.size(); ++i)
-    {
-        src += "\\draw (axis cs:" + ToString(circleX[i]) + ", " + ToString(
-            circleY[i]) + ") circle [radius = " + ToString(circleR[i]) + "];" +
-            endl;
-    }
-    //TEMP
-
     return src;
 }
 
 void pgfplotter::plot(const std::string& path, const std::vector<const
-    pgfplotter::Plotter*>& p)
+    pgfplotter::Axis*>& p)
 {
     if(p.empty())
     {

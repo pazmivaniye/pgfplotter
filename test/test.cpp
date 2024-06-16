@@ -40,19 +40,19 @@ int main(int, char** argv)
     }
     CATCH
 
-    pgf::Plotter p;
+    pgf::Axis p;
     try
     {
-        const auto data = pgfplotter::mesh_grid([](double x, double y){ return
-            std::sin(x)*std::sin(y); }, 0., 1., 0., 1., 50);
+        const auto data = pgf::mesh_grid([](double x, double y){ return std::
+            sin(x)*std::sin(y); }, 0., 1., 0., 1., 50);
         p.surf(data[0], data[1], data[2]);
-        p.x_min(0.);
-        p.x_max(1.);
-        p.y_min(0.);
-        p.y_max(1.);
-        p.z_min(0.);
-        p.z_max(1.);
-        p.view(45., 45.);
+        p.setXMin(0.);
+        p.setXMax(1.);
+        p.setYMin(0.);
+        p.setYMax(1.);
+        p.setZMin(0.);
+        p.setZMax(1.);
+        p.setView(45., 45.);
         p.setXLabel("$x$ (\\si{\\lu})");
         p.setYLabel("$y$ (\\si{\\arcsec})");
         p.setZLabel("$\\dv{^2x}{y^2}$ (\\si{\\lu^2\\per\\arcsec^2})");
@@ -114,7 +114,7 @@ int main(int, char** argv)
 
     try
     {
-        std::vector<pgf::Plotter> v(2, p);
+        std::vector<pgf::Axis> v(2, p);
         pgf::plot(outputDir + "/" + PlotName + "-2", v);
     }
     CATCH
