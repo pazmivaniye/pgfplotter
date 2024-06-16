@@ -1,7 +1,7 @@
 name: build
 on: [push, pull_request]
 jobs:
-  #windows:
+  #windows: # VERSION ISSUES W/ TEXLIVE, REPLACE W/ TLMGR LIKE ON MACOS
   #  runs-on: windows-latest
   #  defaults:
   #    run:
@@ -13,7 +13,7 @@ jobs:
   #        msystem: MINGW64
   #        update: true
   #        install: make mingw-w64-x86_64-gcc mingw-w64-x86_64-perl-win32-tieregistry
-  #    - name: Build and Test
+  #    - name: Install Dependencies
   #      run: |
   #        : # Fix Perl locale issue
   #        export LC_ALL=en_US.utf8
@@ -29,22 +29,42 @@ jobs:
   #        pacman -U --noconfirm $file
   #        : # Install TeX Live packages
   #        pacman -S --noconfirm mingw-w64-x86_64-texlive-luatex mingw-w64-x86_64-texlive-latex-extra mingw-w64-x86_64-texlive-fonts-extra
-  #        : # Build and Test
-  #        make -j
-  #macos:
-  #  runs-on: macos-latest
-  #  steps:
-  #    - uses: actions/checkout@v4
-  #    - uses: melusina-org/setup-macports@v1
   #    - name: Build and Test
-  #      run: |
-  #        sudo port install texlive-luatex texlive-latex-extra texlive-fonts-extra
-  #        make -j
+  #        run: make -j
+  #    - uses: actions/upload-artifact@v4
+  #      with:
+  #        name: windows-build
+  #        path: libpgfplotter.a
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: melusina-org/setup-macports@v1
+      - name: Install Dependencies
+        run: |
+          curl -LO https://mirror.ctan.org/systems/mac/mactex/BasicTeX.pkg
+          sudo installer -pkg BasicTeX.pkg -target /
+          export PATH=/Library/TeX/texbin:$PATH
+          sudo tlmgr update --self
+          sudo tlmgr install standalone xstring luatex85 newtx pgfplots siunitx fontaxes txfonts
+          sudo port install ghostscript poppler
+      - name: Build and Test
+        run: |
+          export PATH=/Library/TeX/texbin:$PATH
+          make -j
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: libpgfplotter.a
   linux:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: sudo apt install texlive-luatex texlive-latex-extra texlive-fonts-extra texlive-xetex texlive-science ghostscript poppler-utils
       - name: Build and Test
-        run: |
-          sudo apt install texlive-luatex texlive-latex-extra texlive-fonts-extra texlive-xetex texlive-science ghostscript poppler-utils
-          make -j
+        run: make -j
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: libpgfplotter.a
