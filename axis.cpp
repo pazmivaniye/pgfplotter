@@ -327,7 +327,7 @@ static void compile(const std::string& path, const std::string& src, bool
 static const std::string src0 =
     "\\IfFileExists{standalone.cls}{}{\\errmessage{The \"standalone\" package i"
         "s required.}}" + endl +
-    "\\documentclass"/*[varwidth]*/"{standalone}" + endl +
+    "\\documentclass{standalone}" + endl +
     "\\usepackage{xstring}" + endl +
     "\\makeatletter" + endl +
     "\\@ifclasslater{standalone}{2018/03/26}{}{\\usepackage{luatex85}}" + endl +
@@ -511,12 +511,12 @@ void pgfplotter::Axis::squeeze()
     ySqueeze = true;
 }
 
-void pgfplotter::Axis::squeeze_x()
+void pgfplotter::Axis::squeezeX()
 {
     xSqueeze = true;
 }
 
-void pgfplotter::Axis::squeeze_y()
+void pgfplotter::Axis::squeezeY()
 {
     ySqueeze = true;
 }
@@ -686,7 +686,7 @@ void pgfplotter::Axis::setView(double az, double el)
     _viewAngles = {az, el};
 }
 
-void pgfplotter::Axis::opacity(double n)
+void pgfplotter::Axis::setSurfOpacity(double n)
 {
     _opacity = n;
 }
@@ -696,8 +696,8 @@ void pgfplotter::Axis::noSep()
     _noSep = true;
 }
 
-void pgfplotter::Axis::xTicks(const std::vector<double>& locations, const std::vector<
-    std::string>& labels, bool rotate)
+void pgfplotter::Axis::setXTicks(const std::vector<double>& locations, const
+    std::vector<std::string>& labels, bool rotate)
 {
     _xTicks = locations;
     _xTickLabels = labels;
@@ -867,7 +867,6 @@ std::string pgfplotter::Axis::plot_src(const std::string& path, int subplot) con
 
     const double tempYMin = yMinSet ? yMin : yMinData;
     const double tempYMax = yMaxSet ? yMax : yMaxData;
-    //const double yRange = tempYMax - tempYMin;
     if(yMinSet || ySqueeze)
     {
         src += ", ymin = " + ToString(tempYMin);
@@ -876,11 +875,6 @@ std::string pgfplotter::Axis::plot_src(const std::string& path, int subplot) con
     {
         src += ", ymax = " + ToString(tempYMax);
     }
-    /*if((yMinSet && yMaxSet) || ySqueeze) // Disables Lua backend if mesh plot
-    {
-        src += ", restrict y to domain = " + ToString(tempYMin - 10.0*yRange) +
-            ":" + ToString(tempYMax + 10.0*yRange);
-    }*/
 
     // Z/meta max/min don't seem to affect contour placement in contour plots.
     if(zMinSet)
@@ -899,11 +893,6 @@ std::string pgfplotter::Axis::plot_src(const std::string& path, int subplot) con
         }
         src += ", point meta max = " + ToString(zMax);
     }
-    /*if(zMinSet && zMaxSet)
-    {
-        src += ", restrict z to domain = " + ToString(zMin) + ":" + ToString(
-            zMax);//TEMP
-    }*/
 
     if(!_xLabel.empty())
     {
@@ -1206,15 +1195,12 @@ std::string pgfplotter::Axis::plot_src(const std::string& path, int subplot) con
         }
     }
 
-    if(legendPos)// && names.size() == data.size())
+    if(legendPos)
     {
         src += "\\legend{";
         for(const auto& n : names)
         {
-//            if(!n.empty())
-            {
-                src += n + ", ";
-            }
+            src += n + ", ";
         }
         src += "}" + endl;
     }

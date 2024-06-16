@@ -114,9 +114,9 @@ namespace pgfplotter
         std::vector<double> lineWidths;
         std::vector<double> opacities;
 
-        std::array<double, 2> _viewAngles = {0.0, 90.0};
+        std::array<double, 2> _viewAngles = {0., 90.};
 
-        double _opacity = 1.0; // Should be per-surface (like `surfaceX`, etc.).
+        double _opacity = 1.; // Should be per-surface (like `surfaceX`, etc.).
 
         unsigned int legendPos = 0;
 
@@ -140,8 +140,8 @@ namespace pgfplotter
         bool axisEqual = false;
         bool axisEqualImage = false;
 
-        double relWidth = 1.0;
-        double relHeight = 1.0;
+        double relWidth = 1.;
+        double relHeight = 1.;
 
         int xPrecision = -1;
         int yPrecision = -1;
@@ -157,11 +157,11 @@ namespace pgfplotter
 
         bool _showColorbar = false;
 
-        double xSpacing = 0.0;
-        double ySpacing = 0.0;
-        double zSpacing = 0.0;
+        double xSpacing = 0.;
+        double ySpacing = 0.;
+        double zSpacing = 0.;
 
-        double xOffset = 0.0;
+        double xOffset = 0.;
 
         bool _noSep = false;
 
@@ -211,8 +211,8 @@ namespace pgfplotter
 
         void legend(unsigned int location = Northeast);
         void squeeze();
-        void squeeze_x();
-        void squeeze_y();
+        void squeezeX();
+        void squeezeY();
         void setXMin(double x);
         void setXMax(double x);
         void setYMin(double y);
@@ -242,9 +242,9 @@ namespace pgfplotter
         void scale_z_spacing(double n);
         void x_offset(double n);
         void setView(double az, double el);
-        void opacity(double n);
+        void setSurfOpacity(double n);
         void noSep();
-        void xTicks(const std::vector<double>& locations, const std::vector<
+        void setXTicks(const std::vector<double>& locations, const std::vector<
             std::string>& labels = {}, bool rotate = false);
         void bgBands(const std::vector<double>& transitions);
         void bidirColormap();
