@@ -405,7 +405,7 @@ static const std::string src0 =
     "\\NewDocumentCommand\\dd{}{\\operatorname{d}}" + endl +
     "\\NewDocumentCommand\\dv{mm}{\\frac{\\dd#1}{\\dd#2}}" + endl +
     "\\NewDocumentCommand\\pdv{mm}{\\frac{\\partial#1}{\\partial#2}}" + endl +
-    "\\definecolor{color0}{RGB}{  0,  57, 181}" + endl +
+    "\\definecolor{color0}{RGB}{  0,  62, 168}" + endl +
     "\\definecolor{color1}{RGB}{202,  46,   0}" + endl +
     "\\definecolor{color2}{RGB}{ 44, 151, 225}" + endl +
     "\\definecolor{color3}{RGB}{141, 202,  58}" + endl +

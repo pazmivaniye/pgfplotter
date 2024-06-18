@@ -25,7 +25,7 @@ namespace pgfplotter
         // These have uniformly increasing perceived lightness.
         constexpr std::array<std::array<int, 3>, 5> Defaults =
         {{
-            {  0,  57, 181},
+            {  0,  62, 168},
             {202,  46,   0},
             { 44, 151, 225},
             {141, 202,  58},
