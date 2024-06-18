@@ -130,7 +130,10 @@ int main(int, char** argv)
             "t[0,\\,1\\right]}\\tan x$");
         q.draw(style, x, y[3], {}, {}, "$1-\\cos x$");
         q.draw(style, x, y[4], {}, {}, "$\\cos\\args{\\cos x}$");
+        q.bgBands({0., 1., 2., 3., 4., 5., 6., x.back()});
         q.squeezeX();
+        q.setYMin(-1.1);
+        q.setYMax(2.1);
         q.resize(1., 0.6);
         q.setTitle("Other Plot");
         q.setXLabel("$x$");
