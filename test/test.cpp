@@ -58,6 +58,7 @@ int main(int, char** argv)
         p.setYLabel("$y$ (\\si{\\arcsec})");
         p.setZLabel("$\\dv{^2x}{y^2}$ (\\si{\\lu^2\\per\\arcsec^2})");
         p.setTitle("Test Plot");
+        p.resize(0.6, 0.6);
         pgf::plot(outputDir + "/" + PlotName, p);
     }
     CATCH
@@ -107,34 +108,46 @@ int main(int, char** argv)
     }
     CATCH
 
+    pgf::Axis q;
     try
     {
-        pgf::plot(outputDir + "/" + PlotName + "-1", p, p);
+        pgf::DrawStyle style = pgf::Default;
+        style.markStyle.spacing = 20;
+        std::vector<double> x(200);
+        std::vector<std::vector<double>> y(5, std::vector<double>(x.size()));
+        for(std::size_t i = 0; i < x.size(); ++i)
+        {
+            x[i] = i*TwoPi/(x.size() - 1);
+            y[0][i] = std::cos(x[i]);
+            y[1][i] = 1. + std::sin(x[i]);
+            y[2][i] = std::max(0., std::min(1., std::tan(x[i])));
+            y[3][i] = 1. - std::cos(x[i]);
+            y[4][i] = std::cos(std::cos(x[i]));
+        }
+        q.draw(style, x, y[0], {}, {}, "$\\cos x$");
+        q.draw(style, x, y[1], {}, {}, "$1+\\sin x$");
+        q.draw(style, x, y[2], {}, {}, "$\\operatornamewithlimits{clamp}_{\\lef"
+            "t[0,\\,1\\right]}\\tan x$");
+        q.draw(style, x, y[3], {}, {}, "$1-\\cos x$");
+        q.draw(style, x, y[4], {}, {}, "$\\cos\\args{\\cos x}$");
+        q.squeezeX();
+        q.resize(1., 0.6);
+        q.setTitle("Other Plot");
+        q.setXLabel("$x$");
+        q.setYLabel("$y$");
+        q.legend(pgf::Axis::Southeast);
     }
     CATCH
 
     try
     {
-        std::vector<pgf::Axis> v(2);
-        v[0] = p;
-        v[0].resize(0.6, 0.6);
-        pgf::DrawStyle style = pgf::Default;
-        style.markStyle.spacing = 20;
-        std::vector<double> x(200), y(x.size()), z(x.size());
-        for(std::size_t i = 0; i < x.size(); ++i)
-        {
-            x[i] = i*TwoPi/(x.size() - 1);
-            y[i] = std::cos(x[i]);
-            z[i] = 1. + std::sin(x[i]);
-        }
-        v[1].draw(style, x, y, {}, {}, "$\\cos\\args{x}$");
-        v[1].draw(style, x, z, {}, {}, "$1+\\sin\\args{x}$");
-        v[1].squeezeX();
-        v[1].resize(1., 0.6);
-        v[1].setTitle("Other Plot");
-        v[1].setXLabel("$x$");
-        v[1].setYLabel("$y$");
-        v[1].legend(pgf::Axis::Southeast);
+        pgf::plot(outputDir + "/" + PlotName + "-1", p, q);
+    }
+    CATCH
+
+    try
+    {
+        const std::vector<pgf::Axis> v = {p, q};
         pgf::plot(outputDir + "/" + PlotName + "-2", v);
     }
     CATCH

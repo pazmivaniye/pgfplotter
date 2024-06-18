@@ -1163,7 +1163,7 @@ std::string pgfplotter::Axis::plot_src(const std::string& path, int subplot) con
                 src += ", mark repeat = " + std::to_string(markers[i].spacing);
             }
         }
-        else if(markers[i].mark < 0)
+        else if(markers[i].mark < 0 && MarkCycle(i).mark > 0)
         {
             src += "mark = " + convert_marker(MarkCycle(i).mark) + ", mark size"
                 " = " + ToString(3.*MarkCycle(i).size*markers[i].size);
