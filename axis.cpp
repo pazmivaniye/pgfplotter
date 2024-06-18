@@ -404,21 +404,44 @@ static const std::string src0 =
         endl +
     "\\NewDocumentCommand\\dd{}{\\operatorname{d}}" + endl +
     "\\NewDocumentCommand\\dv{mm}{\\frac{\\dd#1}{\\dd#2}}" + endl +
-    "\\NewDocumentCommand\\pdv{mm}{\\frac{\\partial#1}{\\partial#2}}" + endl +
-    "\\definecolor{color0}{RGB}{  0,  62, 168}" + endl +
-    "\\definecolor{color1}{RGB}{202,  46,   0}" + endl +
-    "\\definecolor{color2}{RGB}{ 44, 151, 225}" + endl +
-    "\\definecolor{color3}{RGB}{141, 202,  58}" + endl +
-    "\\definecolor{color4}{RGB}{255, 227,   0}" + endl +
-    "\\pgfplotscreateplotcyclelist{colorcycle}{{color0}, {color1}, {color2}, {c"
-        "olor3}, {color4}}" + endl +
-    "\\pgfplotsset{colormap = {bidir}{rgb255 = (10, 10, 143), rgb255 = (255, 25"
-        "5, 255), rgb255 = (160, 10, 10)}}" + endl +
-    "\\begin{document}" + endl;
-static const std::string src2a = "\\begin{tikzpicture}[define rgb/.code = {\\de"
-    "finecolor{mycolor}{RGB}{#1}}"
-    ", rgb color/.style = {define rgb = {#1}, mycolor}"
-    "]" + endl +
+    "\\NewDocumentCommand\\pdv{mm}{\\frac{\\partial#1}{\\partial#2}}" + endl;
+static const std::string src9 = []()
+    {
+        const std::size_t numColors = pgfplotter::Color::Defaults.size();
+        std::ostringstream oss;
+        for(std::size_t i = 0; i < numColors; ++i)
+        {
+            oss << "\\definecolor{color" << i << "}{RGB}{";
+            for(int j = 0; j < 3; ++j)
+            {
+                oss << std::setw(3) << pgfplotter::Color::Defaults[i][j] << (j +
+                    1 < 3 ? ", " : "");
+            }
+            oss << "}\n";
+        }
+        oss << "\\pgfplotscreateplotcyclelist{colorcycle}{";
+        for(std::size_t i = 0; i < numColors; ++i)
+        {
+            oss << "{color" << i << "}" << (i + 1 < numColors ? ", " : "");
+        }
+        oss << "}\n";
+        oss << "\\pgfplotsset{colormap = {bidir}{";
+        for(int i = 0; i < 3; ++i)
+        {
+            oss << "rgb255 = (";
+            for(int j = 0; j < 3; ++j)
+            {
+                oss << std::setw(3) << pgfplotter::Color::Bidir[i][j] << (j + 1
+                    < 3 ? ", " : "");
+            }
+            oss << ")" << (i + 1 < 3 ? ", " : "");
+        }
+        oss << "}}\n";
+        return oss.str();
+    }();
+static const std::string src2a = "\\begin{document}" + endl +
+    "\\begin{tikzpicture}[define rgb/.code = {\\definecolor{mycolor}{RGB}{#1}},"
+        " rgb color/.style = {define rgb = {#1}, mycolor}]" + endl +
     "\\begin{groupplot}[group style = {columns = 1, rows = ";
 static const std::string src2b = ", vertical sep = 1.3cm}]" + endl;
 static const std::string src2bNoSep = ", vertical sep = 0.5cm}]" + endl;
@@ -1250,8 +1273,8 @@ void pgfplotter::plot(const std::string& path, const std::vector<const
         b = b || n->_noSep;
     }
 
-    std::string src = src0 + src2a + std::to_string(p.size()) + (b ? src2bNoSep
-        : src2b);
+    std::string src = src0 + src9 + src2a + std::to_string(p.size()) + (b ?
+        src2bNoSep : src2b);
     for(std::size_t i = 0, n = p.size(); i < n; ++i)
     {
         src += p[i]->plot_src(path, i);
