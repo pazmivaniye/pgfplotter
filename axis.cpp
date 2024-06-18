@@ -1165,10 +1165,8 @@ std::string pgfplotter::Axis::plot_src(const std::string& path, int subplot) con
         }
         else if(markers[i].mark < 0)
         {
-            const std::size_t idx = i%DefaultMarks.size();
-            src += "mark = " + convert_marker(DefaultMarks[idx].mark) + ", mark"
-                " size = " + ToString(3.*DefaultMarks[idx].size*markers[i].
-                size);
+            src += "mark = " + convert_marker(MarkCycle(i).mark) + ", mark size"
+                " = " + ToString(3.*MarkCycle(i).size*markers[i].size);
             if(markers[i].spacing)
             {
                 src += ", mark repeat = " + std::to_string(markers[i].spacing);

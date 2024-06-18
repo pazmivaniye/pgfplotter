@@ -23,7 +23,7 @@ namespace pgfplotter
     namespace Color
     {
         // These have uniformly increasing perceived lightness.
-        static constexpr std::array<std::array<int, 3>, 5> Defaults =
+        constexpr std::array<std::array<int, 3>, 5> Defaults =
         {{
             {  0,  57, 181},
             {202,  46,   0},
@@ -33,26 +33,31 @@ namespace pgfplotter
         }};
         // Blue to white to red, with equal perceived lightness and saturation
         // at both ends.
-        static constexpr std::array<std::array<int, 3>, 3> Bidir =
+        constexpr std::array<std::array<int, 3>, 3> Bidir =
         {{
             { 10,  10, 143},
             {255, 255, 255},
             {160,  10,  10}
         }};
-        static constexpr std::array<int, 3> Black = {};
-        static constexpr std::array<int, 3> DarkGray = {64, 64, 64};
-        static constexpr std::array<int, 3> Gray = {128, 128, 128};
-        static constexpr std::array<int, 3> LightGray = {191, 191, 191};
-        static constexpr std::array<int, 3> White = {255, 255, 255};
-        static constexpr std::array<int, 3> Red = {255, 0, 0};
-        static constexpr std::array<int, 3> Green = {0, 255, 0};
-        static constexpr std::array<int, 3> Blue = {0, 0, 255};
+        constexpr std::array<int, 3> Black = {};
+        constexpr std::array<int, 3> DarkGray = {64, 64, 64};
+        constexpr std::array<int, 3> Gray = {128, 128, 128};
+        constexpr std::array<int, 3> LightGray = {191, 191, 191};
+        constexpr std::array<int, 3> White = {255, 255, 255};
+        constexpr std::array<int, 3> Red = {255, 0, 0};
+        constexpr std::array<int, 3> Green = {0, 255, 0};
+        constexpr std::array<int, 3> Blue = {0, 0, 255};
         // Selects color from `Defaults`.
-        static constexpr std::array<int, 3> Auto = {-1};
-        static constexpr std::array<int, 3> FromX = {-2};
-        static constexpr std::array<int, 3> FromY = {-3};
-        static constexpr std::array<int, 3> FromZ = {-4};
-        static constexpr std::array<int, 3> FromW = {-5};
+        constexpr std::array<int, 3> Auto = {-1};
+        constexpr std::array<int, 3> FromX = {-2};
+        constexpr std::array<int, 3> FromY = {-3};
+        constexpr std::array<int, 3> FromZ = {-4};
+        constexpr std::array<int, 3> FromW = {-5};
+    }
+
+    constexpr std::array<int, 3> ColorCycle(std::size_t i)
+    {
+        return Color::Defaults[i%Color::Defaults.size()];
     }
 
     enum class LineStyle
@@ -79,7 +84,7 @@ namespace pgfplotter
         }
     };
 
-    static constexpr std::array<MarkStyle, 5> DefaultMarks =
+    constexpr std::array<MarkStyle, 5> DefaultMarks =
     {{
         {'S', 2./3., 0},
         {'*', 2./3., 0},
@@ -87,6 +92,11 @@ namespace pgfplotter
         {'|', 2./3., 0},
         MarkStyle::None()
     }};
+
+    constexpr MarkStyle MarkCycle(std::size_t i)
+    {
+        return DefaultMarks[i%DefaultMarks.size()];
+    }
 
     struct DrawStyle
     {
@@ -96,12 +106,12 @@ namespace pgfplotter
         double lineWidth;
         double opacity;
     };
-    static constexpr DrawStyle BasicLine = {Color::Auto, MarkStyle::None(),
-        LineStyle::Solid, 1., 1.};
-    static constexpr DrawStyle BasicScatter = {Color::Auto, MarkStyle::Point(),
+    constexpr DrawStyle BasicLine = {Color::Auto, MarkStyle::None(), LineStyle::
+        Solid, 1., 1.};
+    constexpr DrawStyle BasicScatter = {Color::Auto, MarkStyle::Point(),
         LineStyle::None, 1., 1.};
-    static constexpr DrawStyle Default = {Color::Auto, MarkStyle::Auto(),
-        LineStyle::Solid, 1., 1.};
+    constexpr DrawStyle Default = {Color::Auto, MarkStyle::Auto(), LineStyle::
+        Solid, 1., 1.};
 
     class Axis
     {
@@ -187,11 +197,6 @@ namespace pgfplotter
         std::string plot_src(const std::string& dir, int subplot) const;
 
     public:
-        static constexpr std::array<int, 3> ColorCycle(std::size_t i)
-        {
-            return Color::Defaults[i%Color::Defaults.size()];
-        }
-
         static std::string ToString(double x, unsigned int precision = 10);
 
         static constexpr unsigned int Fixed = 1;

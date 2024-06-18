@@ -16,6 +16,7 @@
 namespace pgf = pgfplotter;
 
 static const std::string PlotName = "plot";
+static constexpr double TwoPi = 6.28318530717958647692528676656;
 
 static std::string get_dir(const std::string& path)
 {
@@ -114,7 +115,26 @@ int main(int, char** argv)
 
     try
     {
-        std::vector<pgf::Axis> v(2, p);
+        std::vector<pgf::Axis> v(2);
+        v[0] = p;
+        v[0].resize(0.6, 0.6);
+        pgf::DrawStyle style = pgf::Default;
+        style.markStyle.spacing = 20;
+        std::vector<double> x(200), y(x.size()), z(x.size());
+        for(std::size_t i = 0; i < x.size(); ++i)
+        {
+            x[i] = i*TwoPi/(x.size() - 1);
+            y[i] = std::cos(x[i]);
+            z[i] = 1. + std::sin(x[i]);
+        }
+        v[1].draw(style, x, y, {}, {}, "$\\cos\\args{x}$");
+        v[1].draw(style, x, z, {}, {}, "$1+\\sin\\args{x}$");
+        v[1].squeezeX();
+        v[1].resize(1., 0.6);
+        v[1].setTitle("Other Plot");
+        v[1].setXLabel("$x$");
+        v[1].setYLabel("$y$");
+        v[1].legend(pgf::Axis::Southeast);
         pgf::plot(outputDir + "/" + PlotName + "-2", v);
     }
     CATCH
