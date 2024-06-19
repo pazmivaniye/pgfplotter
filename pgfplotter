@@ -26,10 +26,10 @@ namespace pgfplotter
         constexpr std::array<std::array<int, 3>, 5> Defaults =
         {{
             {  0,  34, 138},
-            {240,  56,   0},
-            { 53, 178, 253},
-            {153, 219,  64},
-            {255, 227,   0}
+            {221,  51,   0},
+            { 48, 163, 232},
+            {139, 201,  58},
+            {254, 199,   0}
         }};
         // Blue to white to red, with equal perceived lightness and saturation
         // at both ends.
