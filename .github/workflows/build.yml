@@ -61,7 +61,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Dependencies
-        run: sudo apt install texlive-luatex texlive-latex-extra texlive-fonts-extra texlive-xetex texlive-science ghostscript poppler-utils
+        run: |
+          sudo apt update
+          sudo apt install texlive-luatex texlive-latex-extra texlive-fonts-extra texlive-xetex texlive-science ghostscript poppler-utils
       - name: Build and Test
         run: make -j
       - uses: actions/upload-artifact@v4
