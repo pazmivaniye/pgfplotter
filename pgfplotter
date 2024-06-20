@@ -23,13 +23,14 @@ namespace pgfplotter
     namespace Color
     {
         // These have uniformly increasing luminance.
-        constexpr std::array<std::array<int, 3>, 5> Defaults =
+        constexpr std::array<std::array<int, 3>, 6> Defaults =
         {{
             {  0,  34, 138},
             {221,  51,   0},
             { 48, 163, 232},
             {139, 201,  58},
-            {254, 199,   0}
+            {254, 199,   0},
+            {255, 215, 255}
         }};
         // Blue to white to red, with equal perceived lightness and saturation
         // at both ends.
@@ -84,11 +85,12 @@ namespace pgfplotter
         }
     };
 
-    constexpr std::array<MarkStyle, 5> DefaultMarks =
+    constexpr std::array<MarkStyle, 6> DefaultMarks =
     {{
         {'S', 2./3., 0},
         {'*', 2./3., 0},
         {'D', 2./3., 0},
+        {'x', 2., 0},
         {'|', 2./3., 0},
         MarkStyle::None()
     }};

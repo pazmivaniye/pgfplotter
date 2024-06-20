@@ -114,26 +114,28 @@ int main(int, char** argv)
         pgf::DrawStyle style = pgf::Default;
         style.markStyle.spacing = 20;
         std::vector<double> x(200);
-        std::vector<std::vector<double>> y(5, std::vector<double>(x.size()));
+        std::vector<std::vector<double>> y(6, std::vector<double>(x.size()));
         for(std::size_t i = 0; i < x.size(); ++i)
         {
             x[i] = i*TwoPi/(x.size() - 1);
             y[0][i] = std::cos(x[i]);
             y[1][i] = 1. + std::sin(x[i]);
-            y[2][i] = std::max(0., std::min(1., std::tan(x[i])));
-            y[3][i] = 1. - std::cos(x[i]);
-            y[4][i] = std::cos(std::cos(x[i]));
+            y[2][i] = std::max(0., std::min(1., 1. - std::tan(x[i])));
+            y[3][i] = 1. + std::sin(x[i]);
+            y[4][i] = std::cos(std::sin(x[i]));
+            y[5][i] = 1. - std::cos(1 + x[i]);
         }
         q.draw(style, x, y[0], {}, {}, "$\\cos x$");
         q.draw(style, x, y[1], {}, {}, "$1+\\sin x$");
         q.draw(style, x, y[2], {}, {}, "$\\operatornamewithlimits{clamp}_{\\lef"
-            "t[0,\\,1\\right]}\\tan x$");
-        q.draw(style, x, y[3], {}, {}, "$1-\\cos x$");
-        q.draw(style, x, y[4], {}, {}, "$\\cos\\args{\\cos x}$");
+            "t[0,\\,1\\right]}\\args{1-\\tan x}$");
+        q.draw(style, x, y[3], {}, {}, "$1+\\sin x$");
+        q.draw(style, x, y[4], {}, {}, "$\\cos\\args{\\sin x}$");
+        q.draw(style, x, y[5], {}, {}, "$1-\\cos\\args{\\cos\\args{1+x}}$");
         q.bgBands({0., 1., 2., 3., 4., 5., 6., x.back()});
         q.squeezeX();
-        q.setYMin(-1.1);
-        q.setYMax(2.1);
+        q.setYMin(-2.25);
+        q.setYMax(2.25);
         q.resize(1., 0.6);
         q.setTitle("Other Plot");
         q.setXLabel("$x$");
