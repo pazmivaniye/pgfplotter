@@ -22,7 +22,7 @@ namespace pgfplotter
 
     namespace Color
     {
-        // These have uniformly increasing perceived lightness.
+        // These have uniformly increasing luminance.
         constexpr std::array<std::array<int, 3>, 5> Defaults =
         {{
             {  0,  34, 138},
