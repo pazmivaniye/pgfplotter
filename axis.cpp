@@ -177,6 +177,10 @@ static std::string convert_marker(char marker)
     {
         return "square*, mark options = {rotate = 45, scale = 0.6}";
     }
+    if(marker == 'x')
+    {
+        return "x, mark options = {scale = 1.5}";
+    }
     return std::string() + marker;
 }
 

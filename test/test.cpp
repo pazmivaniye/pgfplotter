@@ -16,6 +16,7 @@
 namespace pgf = pgfplotter;
 
 static const std::string PlotName = "plot";
+static constexpr double Pi = 3.14159265358979323846264338328;
 static constexpr double TwoPi = 6.28318530717958647692528676656;
 
 static std::string get_dir(const std::string& path)
@@ -121,17 +122,18 @@ int main(int, char** argv)
             y[0][i] = std::cos(x[i]);
             y[1][i] = 1. + std::sin(x[i]);
             y[2][i] = std::max(0., std::min(1., 1. - std::tan(x[i])));
-            y[3][i] = 1. + std::sin(x[i]);
+            y[3][i] = 1. + std::sin(2.*x[i]);
             y[4][i] = std::cos(std::sin(x[i]));
-            y[5][i] = 1. - std::cos(1 + x[i]);
+            y[5][i] = 1. - 2.*(x[i]/Pi - std::floor(x[i]/Pi));
         }
         q.draw(style, x, y[0], {}, {}, "$\\cos x$");
         q.draw(style, x, y[1], {}, {}, "$1+\\sin x$");
         q.draw(style, x, y[2], {}, {}, "$\\operatornamewithlimits{clamp}_{\\lef"
             "t[0,\\,1\\right]}\\args{1-\\tan x}$");
-        q.draw(style, x, y[3], {}, {}, "$1+\\sin x$");
+        q.draw(style, x, y[3], {}, {}, "$1+\\sin\\args{2x}$");
         q.draw(style, x, y[4], {}, {}, "$\\cos\\args{\\sin x}$");
-        q.draw(style, x, y[5], {}, {}, "$1-\\cos\\args{\\cos\\args{1+x}}$");
+        q.draw(style, x, y[5], {}, {}, "$1-2\\operatorname{frac}\\args{\\frac{x"
+            "}{\\pi}}$");
         q.bgBands({0., 1., 2., 3., 4., 5., 6., x.back()});
         q.squeezeX();
         q.setYMin(-2.25);
@@ -140,7 +142,7 @@ int main(int, char** argv)
         q.setTitle("Other Plot");
         q.setXLabel("$x$");
         q.setYLabel("$y$");
-        q.legend(pgf::Axis::Southeast);
+        q.legend(pgf::Axis::Southwest);
     }
     CATCH
 
