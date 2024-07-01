@@ -344,37 +344,36 @@ static const std::string src0 =
     "\\makeatletter" + endl +
     "\\@ifclasslater{standalone}{2018/03/26}{}{\\usepackage{luatex85}}" + endl +
     // If `newtx` is new enough, use option `newsu`.
-    "\\newread\\myread" + endl +
-    "\\openin\\myread=newtx.sty" + endl +
-    "\\@whilesw\\ifx\\mydone\\undefined\\fi%" + endl +
+    "\\IfFileExists{newtx.sty}%" + endl +
     "{%" + endl +
-    "    \\readline\\myread to \\myline" + endl +
-    "    \\StrGobbleLeft{\\myline}{5}[\\mytempa]" + endl +
-    "    \\StrSplit{\\mytempa}{8}{\\mytempa}{\\mytempb}" + endl +
-    "    \\ifnum\\pdf@strcmp{\\mytempa}{filedate}=0\\relax\\def\\mydone\\fi" +
-        endl +
-    "}" + endl +
-    "\\closein\\myread" + endl +
-    "\\makeatother" + endl +
-    "\\StrGobbleLeft{\\myline}{14}[\\newtxdate]" + endl +
-    "\\StrLeft{\\newtxdate}{10}[\\newtxdate]" + endl +
-    "\\StrSplit{\\newtxdate}{4}{\\newtxyear}{\\newtxmonth}" + endl +
-    "\\StrGobbleLeft{\\newtxmonth}{1}[\\newtxmonth]" + endl +
-    "\\StrSplit{\\newtxmonth}{2}{\\newtxmonth}{\\newtxday}" + endl +
-    "\\StrGobbleLeft{\\newtxday}{1}[\\newtxday]" + endl +
-    "\\def\\usenewsu{1} \\ifnum\\newtxyear<2023\\def\\usenewsu{0}\\fi \\ifnum\\"
-        "newtxyear=2023\\ifnum\\newtxmonth<8\\def\\usenewsu{0}\\fi\\fi \\ifnum"
-        "\\newtxyear=2023\\ifnum\\newtxmonth=8\\ifnum\\newtxday<21\\def\\usenew"
-        "su{0}\\fi\\fi\\fi" + endl +
-#if 1 // AIAA
-    "\\ifnum\\usenewsu=1\\usepackage[newsu]{newtx}\\else\\usepackage{newtx}\\fi"
+    "    \\newread\\myread" + endl +
+    "    \\openin\\myread=newtx.sty" + endl +
+    "    \\@whilesw\\ifx\\mydone\\undefined\\fi%" + endl +
+    "    {%" + endl +
+    "        \\readline\\myread to \\myline" + endl +
+    "        \\StrGobbleLeft{\\myline}{5}[\\mytempa]" + endl +
+    "        \\StrSplit{\\mytempa}{8}{\\mytempa}{\\mytempb}" + endl +
+    "        \\ifnum\\pdf@strcmp{\\mytempa}{filedate}=0\\relax\\def\\mydone\\fi"
         + endl +
-#elif 0 // AAS
-    "\\ifnum\\usenewsu=1\\usepackage[newsu]{newtx}\\else\\usepackage{newtxtext}"
+    "    }" + endl +
+    "    \\closein\\myread" + endl +
+    "    \\makeatother" + endl +
+    "    \\StrGobbleLeft{\\myline}{14}[\\newtxdate]" + endl +
+    "    \\StrLeft{\\newtxdate}{10}[\\newtxdate]" + endl +
+    "    \\StrSplit{\\newtxdate}{4}{\\newtxyear}{\\newtxmonth}" + endl +
+    "    \\StrGobbleLeft{\\newtxmonth}{1}[\\newtxmonth]" + endl +
+    "    \\StrSplit{\\newtxmonth}{2}{\\newtxmonth}{\\newtxday}" + endl +
+    "    \\StrGobbleLeft{\\newtxday}{1}[\\newtxday]" + endl +
+    "    \\def\\usenewsu{1} \\ifnum\\newtxyear<2023\\def\\usenewsu{0}\\fi \\ifn"
+        "um\\newtxyear=2023\\ifnum\\newtxmonth<8\\def\\usenewsu{0}\\fi\\fi \\if"
+        "num\\newtxyear=2023\\ifnum\\newtxmonth=8\\ifnum\\newtxday<21\\def\\use"
+        "newsu{0}\\fi\\fi\\fi" + endl +
+    "    \\ifnum\\usenewsu=1\\usepackage[newsu]{newtx}\\else\\usepackage{newtx}"
         "\\fi" + endl +
-    "\\usepackage{amsmath}" + endl +
-    "\\usepackage{amsfonts}" + endl +
-#endif
+    "}{%" + endl +
+    "    \\usepackage{newtxtext}" + endl +
+    "    \\usepackage{newtxmath}" + endl +
+    "}" + endl +
     "\\usepackage{bm}" + endl +
     "\\usepackage{tikz}" + endl +
     "\\usepackage{pgfplots}" + endl +
