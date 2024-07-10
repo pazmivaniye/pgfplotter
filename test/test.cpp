@@ -154,7 +154,9 @@ int main(int, char** argv)
 
     try
     {
-        const std::vector<pgf::Axis> v = {p, q};
+        std::vector<pgf::Axis> v = {p, q};
+        v[1].fill(pgf::Color::Defaults[0], {5., 6., 6., 5.}, {-1., -1., -2.,
+            -2.});
         pgf::plot(outputDir + "/" + PlotName + "-2", v);
     }
     CATCH
