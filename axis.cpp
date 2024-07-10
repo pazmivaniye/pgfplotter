@@ -533,6 +533,14 @@ void pgfplotter::Axis::matrix(const std::vector<double>& x, const std::vector<
     matrixSurf.push_back(true);
 }
 
+void pgfplotter::Axis::fill(const std::array<int, 3>& color, const std::vector<
+    double>& x, const std::vector<double>& y)
+{
+    fillX.push_back(x);
+    fillY.push_back(y);
+    fillColors.push_back(color);
+}
+
 void pgfplotter::Axis::legend(unsigned int location)
 {
     legendPos = location;
@@ -1145,6 +1153,33 @@ std::string pgfplotter::Axis::plot_src(const std::string& path, int subplot) con
             out << ToString(surfaceX[i][j]) << " " << ToString(surfaceY[i][j])
                 << " " << ToString(surfaceZ[i][j]) << std::endl;
         }
+    }
+
+    for(std::size_t i = 0; i < fillX.size(); ++i)
+    {
+        const std::size_t numPoints = fillX[i].size();
+        if(fillY[i].size() != numPoints)
+        {
+            throw std::runtime_error("Number of points in x and y must match.");
+        }
+        src += "\\fill[";
+        if(fillColors[i][0] >= 0)
+        {
+            src += "rgb color = {" + std::to_string(fillColors[i][0]) + ", " +
+                std::to_string(fillColors[i][1]) + ", " + std::to_string(
+                fillColors[i][2]) + "}";
+        }
+        else
+        {
+            src += "black";
+        }
+        src += "] ";
+        for(std::size_t j = 0; j < numPoints; ++j)
+        {
+            src += "(" + ToString(fillX[i][j]) + ", " + ToString(fillY[i][j]) +
+                ")--";
+        }
+        src += "cycle;" + endl;
     }
 
     for(std::size_t i = 0, sz = data.size(); i < sz; ++i)

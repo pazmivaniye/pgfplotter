@@ -136,6 +136,9 @@ namespace pgfplotter
         std::vector<LineStyle> lineStyles;
         std::vector<double> lineWidths;
         std::vector<double> opacities;
+        std::vector<std::vector<double>> fillX;
+        std::vector<std::vector<double>> fillY;
+        std::vector<std::array<int, 3>> fillColors;
 
         std::array<double, 2> _viewAngles = {0., 90.};
 
@@ -226,6 +229,9 @@ namespace pgfplotter
             string& name = "");
         void matrix(const std::vector<double>& x, const std::vector<double>& y,
             const std::vector<double>& z, const std::string& name = "");
+
+        void fill(const std::array<int, 3>& color, const std::vector<double>& x,
+            const std::vector<double>& y);
 
         void legend(unsigned int location = Northeast);
         void squeeze();
