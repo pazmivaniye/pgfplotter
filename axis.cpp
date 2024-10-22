@@ -171,15 +171,17 @@ static std::string convert_marker(char marker)
     }
     if(marker == 'd')
     {
-        return "square, mark options = {rotate = 45, scale = 0.6}";
+        return "square, mark options = {line join = miter, rotate = 45, scale ="
+            " 0.6}";
     }
     if(marker == 'D')
     {
-        return "square*, mark options = {rotate = 45, scale = 0.6}";
+        return "square*, mark options = {line join = miter, rotate = 45, scale "
+            "= 0.6}";
     }
     if(marker == 'x')
     {
-        return "x, mark options = {scale = 1.5}";
+        return "x, mark options = {line join = miter, scale = 1.5}";
     }
     return std::string() + marker;
 }
@@ -793,10 +795,10 @@ std::string pgfplotter::Axis::plot_src(const std::string& path, int subplot) con
         "width, height = " + ToString(relHeight) + "\\textwidth, colormap name "
         "= ";
     src += _bidirColormap ? "bidir" : "viridis";
-    src += ", every axis plot/.append style = {ultra thick}, view = {" +
-        ToString(_viewAngles[0]) + "}{" + ToString(_viewAngles[1]) + "}, clip m"
-        "ode = individual, colorbar style = {font = \\" + FontSize + ", y tick "
-        "label style = {";
+    src += ", every axis plot/.append style = {ultra thick, line join = bevel, "
+        "mark options = {line join = miter}}, view = {" + ToString(_viewAngles[
+        0]) + "}{" + ToString(_viewAngles[1]) + "}, clip mode = individual, col"
+        "orbar style = {font = \\" + FontSize + ", y tick label style = {";
     if(zPrecision >= 0)
     {
         src += ", /pgf/number format/precision = " + ToString(zPrecision) +
