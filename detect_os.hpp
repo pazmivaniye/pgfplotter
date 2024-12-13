@@ -6,7 +6,7 @@
 #define OS_MACOS
 #else
 static_assert(false, "Failed to detect an acceptable OS (iOS is not supported)."
-    "\n");
+    );
 #endif
 #elif defined(_WIN32) || defined(_WIN64)
 #define OS_WINDOWS
@@ -14,7 +14,7 @@ static_assert(false, "Failed to detect an acceptable OS (iOS is not supported)."
 #define OS_LINUX
 #else
 static_assert(false, "Failed to detect an acceptable OS (no valid macros define"
-    "d).\n");
+    "d).");
 #endif
 #if defined(OS_MACOS) || defined(OS_LINUX)
 #define OS_UNIX
