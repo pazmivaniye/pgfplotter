@@ -978,6 +978,8 @@ std::string pgfplotter::Axis::plot_src(const std::string& path, int subplot) con
                 legendPos) + " not recognized.");
         }
         src += ", legend style = {row sep = -2pt}}";
+        src += ", legend image post style = {fill opacity = 1, draw opacity = 1"
+            ", mark size = 2.}";
     }
     if(axisEqual)
     {

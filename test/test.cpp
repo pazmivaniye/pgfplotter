@@ -114,6 +114,8 @@ int main(int, char** argv)
     {
         pgf::DrawStyle style = pgf::Default;
         style.markStyle.spacing = 20;
+        pgf::DrawStyle otherStyle = style;
+        otherStyle.opacity = 0.5;
         std::vector<double> x(200);
         std::vector<std::vector<double>> y(6, std::vector<double>(x.size()));
         for(std::size_t i = 0; i < x.size(); ++i)
@@ -126,7 +128,7 @@ int main(int, char** argv)
             y[4][i] = std::cos(std::sin(x[i]));
             y[5][i] = 1. - 2.*(x[i]/Pi - std::floor(x[i]/Pi));
         }
-        q.draw(style, x, y[0], {}, {}, "$\\cos x$");
+        q.draw(otherStyle, x, y[0], {}, {}, "$\\cos x$");
         q.draw(style, x, y[1], {}, {}, "$1+\\sin x$");
         q.draw(style, x, y[2], {}, {}, "$\\operatornamewithlimits{clamp}_{\\lef"
             "t[0,\\,1\\right]}\\args{1-\\tan x}$");
