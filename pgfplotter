@@ -195,6 +195,12 @@ namespace pgfplotter
         std::vector<std::string> _xTickLabels;
         bool _rotateXTickLabels = false;
 
+        std::vector<double> _yTicks;
+        std::vector<std::string> _yTickLabels;
+
+        std::vector<double> _zTicks;
+        std::vector<std::string> _zTickLabels;
+
         std::vector<double> _bgBands;
 
         bool _bidirColormap = false;
@@ -270,6 +276,10 @@ namespace pgfplotter
         void noSep();
         void setXTicks(const std::vector<double>& locations, const std::vector<
             std::string>& labels = {}, bool rotate = false);
+        void setYTicks(const std::vector<double>& locations, const std::vector<
+            std::string>& labels = {});
+        void setZTicks(const std::vector<double>& locations, const std::vector<
+            std::string>& labels = {});
         void bgBands(const std::vector<double>& transitions);
         void bidirColormap();
     };

@@ -747,6 +747,20 @@ void pgfplotter::Axis::setXTicks(const std::vector<double>& locations, const
     _rotateXTickLabels = rotate;
 }
 
+void pgfplotter::Axis::setYTicks(const std::vector<double>& locations, const
+    std::vector<std::string>& labels)
+{
+    _yTicks = locations;
+    _yTickLabels = labels;
+}
+
+void pgfplotter::Axis::setZTicks(const std::vector<double>& locations, const
+    std::vector<std::string>& labels)
+{
+    _zTicks = locations;
+    _zTickLabels = labels;
+}
+
 void pgfplotter::Axis::bgBands(const std::vector<double>& transitions)
 {
     _bgBands = transitions;
@@ -1076,6 +1090,58 @@ std::string pgfplotter::Axis::plot_src(const std::string& path, int subplot) con
         {
             src += _xTickLabels[i];
             if(i + 1 < _xTickLabels.size())
+            {
+                src += ", ";
+            }
+        }
+        src += "}";
+    }
+    if(!_yTicks.empty())
+    {
+        src += ", ytick = {";
+        for(std::size_t i = 0; i < _yTicks.size(); ++i)
+        {
+            src += ToString(_yTicks[i]);
+            if(i + 1 < _yTicks.size())
+            {
+                src += ", ";
+            }
+        }
+        src += "}";
+    }
+    if(!_yTickLabels.empty())
+    {
+        src += ", yticklabels = {";
+        for(std::size_t i = 0; i < _yTickLabels.size(); ++i)
+        {
+            src += _yTickLabels[i];
+            if(i + 1 < _yTickLabels.size())
+            {
+                src += ", ";
+            }
+        }
+        src += "}";
+    }
+    if(!_zTicks.empty())
+    {
+        src += ", ztick = {";
+        for(std::size_t i = 0; i < _zTicks.size(); ++i)
+        {
+            src += ToString(_zTicks[i]);
+            if(i + 1 < _zTicks.size())
+            {
+                src += ", ";
+            }
+        }
+        src += "}";
+    }
+    if(!_zTickLabels.empty())
+    {
+        src += ", zticklabels = {";
+        for(std::size_t i = 0; i < _zTickLabels.size(); ++i)
+        {
+            src += _zTickLabels[i];
+            if(i + 1 < _zTickLabels.size())
             {
                 src += ", ";
             }
