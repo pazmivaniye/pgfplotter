@@ -1357,7 +1357,7 @@ std::string pgfplotter::Axis::plot_src(const std::string& path, int subplot) con
         src += "\\legend{";
         for(const auto& n : names)
         {
-            src += n + ", ";
+            src += "{" + n + "}, ";
         }
         src += "}" + endl;
     }
