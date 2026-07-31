@@ -447,7 +447,8 @@ static const std::string src9 = []()
 static const std::string src2a = "\\begin{document}" + endl +
     "\\begin{tikzpicture}[define rgb/.code = {\\definecolor{mycolor}{RGB}{#1}},"
         " rgb color/.style = {define rgb = {#1}, mycolor}]" + endl +
-    "\\begin{groupplot}[group style = {columns = 1, rows = ";
+    "\\begin{groupplot}[group style = {group name = subplots, columns = 1, rows"
+        " = ";
 static const std::string src2b = ", vertical sep = 1.3cm}]" + endl;
 static const std::string src2bNoSep = ", vertical sep = 0.5cm}]" + endl;
 // Axis options
@@ -458,34 +459,67 @@ static const std::string src1 = ", cycle list name = colorcycle"
 static const std::string src8 = ", label style = {font = \\" + FontSize + "}"
     "]" + endl;
 static const std::string src3 = "};" + endl;
-static const std::string src4 = "\\end{groupplot}" + endl +
-    "\\end{tikzpicture}" + endl;
-static const std::string src5 = "\\end{document}";
-static const std::string src7 = "" + endl;
+static const std::string src4 = "\\end{groupplot}" + endl;
+static const std::string src5 = "\\end{tikzpicture}" + endl + "\\end{document}";
+
+const std::string& pgfplotter::Axis::title() const
+{
+    return _title;
+}
 
 void pgfplotter::Axis::setTitle(const std::string& title)
 {
     _title = title;
 }
 
-void pgfplotter::Axis::setXLabel(const std::string& xLabel)
+const std::string& pgfplotter::Axis::xLabel() const
 {
-    _xLabel = xLabel;
+    return _xLabel;
 }
 
-void pgfplotter::Axis::setYLabel(const std::string& yLabel)
+void pgfplotter::Axis::setXLabel(const std::string& label)
 {
-    _yLabel = yLabel;
+    _xLabel = label;
 }
 
-void pgfplotter::Axis::setZLabel(const std::string& zLabel)
+const std::string& pgfplotter::Axis::yLabel() const
 {
-    _zLabel = zLabel;
+    return _yLabel;
 }
 
-void pgfplotter::Axis::setWLabel(const std::string& wLabel)
+void pgfplotter::Axis::setYLabel(const std::string& label)
 {
-    setZLabel(wLabel); //TEMP - separate z & w
+    _yLabel = label;
+}
+
+const std::string& pgfplotter::Axis::zLabel() const
+{
+    return _zLabel;
+}
+
+void pgfplotter::Axis::setZLabel(const std::string& label)
+{
+    _zLabel = label;
+}
+
+const std::string& pgfplotter::Axis::wLabel() const
+{
+    return zLabel(); //TEMP - separate z & w
+}
+
+void pgfplotter::Axis::setWLabel(const std::string& label)
+{
+    setZLabel(label); //TEMP - separate z & w
+}
+
+const std::string& pgfplotter::Axis::groupLabel() const
+{
+    return _groupLabel;
+}
+
+void pgfplotter::Axis::setGroupLabel(const std::string& label)
+{
+    _groupLabel = label;
 }
 
 void pgfplotter::Axis::draw(const DrawStyle& style, const std::vector<double>&
@@ -684,19 +718,19 @@ void pgfplotter::Axis::setWFormat(unsigned int mode)
     zFormat = mode; //TEMP - separate z & w
 }
 
-void pgfplotter::Axis::x_log()
+void pgfplotter::Axis::setXLog(double base)
 {
-    xLog = true;
+    _xLog = base;
 }
 
-void pgfplotter::Axis::y_log()
+void pgfplotter::Axis::setYLog(double base)
 {
-    yLog = true;
+    _yLog = base;
 }
 
-void pgfplotter::Axis::z_log()
+void pgfplotter::Axis::setZLog(double base)
 {
-    zLog = true;
+    _zLog = base;
 }
 
 void pgfplotter::Axis::showColorbar()
@@ -771,7 +805,8 @@ void pgfplotter::Axis::bidirColormap()
     _bidirColormap = true;
 }
 
-std::string pgfplotter::Axis::plot_src(const std::string& path, int subplot) const
+std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
+    const
 {
     if(path.empty())
     {
@@ -838,17 +873,29 @@ std::string pgfplotter::Axis::plot_src(const std::string& path, int subplot) con
     }
     src += "}";
 
-    if(xLog)
+    if(_xLog > 0.)
     {
         src += ", xmode = log";
+        if(_xLog != 10.)
+        {
+            src += ", log basis x = " + ToString(_xLog);
+        }
     }
-    if(yLog)
+    if(_yLog > 0.)
     {
         src += ", ymode = log";
+        if(_yLog != 10.)
+        {
+            src += ", log basis y = " + ToString(_yLog);
+        }
     }
-    if(zLog)
+    if(_zLog > 0.)
     {
         src += ", zmode = log";
+        if(_zLog != 10.)
+        {
+            src += ", log basis z = " + ToString(_zLog);
+        }
     }
 
     if(xSpacing)
@@ -1375,19 +1422,67 @@ void pgfplotter::plot(const std::string& path, const std::vector<const
         return;
     }
 
-    bool b = false;
+    bool noSep = false;
     for(const auto& n : p)
     {
-        b = b || n->_noSep;
+        if(n->_noSep)
+        {
+            noSep = true;
+        }
+        break;
     }
 
-    std::string src = src0 + src9 + src2a + std::to_string(p.size()) + (b ?
+    std::string src = src0 + src9 + src2a + std::to_string(p.size()) + (noSep ?
         src2bNoSep : src2b);
     for(std::size_t i = 0, n = p.size(); i < n; ++i)
     {
-        src += p[i]->plot_src(path, i);
+        src += p[i]->plotSrc(path, i);
     }
-    src += src4 + src5;
+    src += src4;
+    if(!p[0]->_groupLabel.empty())
+    {
+        src += "\\path let ";
+        for(std::size_t i = 0; i < p.size(); ++i)
+        {
+            src += "\\p" + std::to_string(i + 1) + " = (subplots c1r" + std::
+                to_string(i + 1) + ".outer west)";
+            if(i + 1 < p.size())
+            {
+                src += ",";
+            }
+            src += endl + "    ";
+        }
+        src += "in coordinate (west) at (";
+        if(p.size() == 1)
+        {
+            src += "{\\x1 - 0.25cm}, \\y1";
+        }
+        else
+        {
+            src += "{min(";
+            for(std::size_t i = 0; i < p.size(); ++i)
+            {
+                src += "\\x" + std::to_string(i + 1);
+                if(i + 1 < p.size())
+                {
+                    src += ", ";
+                }
+            }
+            src += ") - 0.25cm}, {(";
+            for(std::size_t i = 0; i < p.size(); ++i)
+            {
+                src += "\\y" + std::to_string(i + 1);
+                if(i + 1 < p.size())
+                {
+                    src += " + ";
+                }
+            }
+            src += ")/" + std::to_string(p.size()) + "}";
+        }
+        src += ");" + endl + "\\node[rotate = 90, font = \\" + FontSize +
+            "] at (west) {" + p[0]->_groupLabel + "};" + endl;
+    }
+    src += src5;
 
     compile(path, src, false);
 }

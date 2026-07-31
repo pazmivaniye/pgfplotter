@@ -58,20 +58,21 @@ int main(int, char** argv)
         p.setXLabel("$x$ (\\si{\\lu})");
         p.setYLabel("$y$ (\\si{\\arcsec})");
         p.setZLabel("$\\dv{^2x}{y^2}$ (\\si{\\lu^2\\per\\arcsec^2})");
+        p.setGroupLabel("Group Label");
         p.setTitle("Test Plot");
         p.resize(0.6, 0.6);
-        pgf::plot(outputDir + "/" + PlotName, p);
+        pgf::plot(outputDir + "/" + PlotName + "-0", p);
     }
     CATCH
 
     try
     {
-        if(!std::filesystem::exists(outputDir + "/" + PlotName + ".png"))
+        if(!std::filesystem::exists(outputDir + "/" + PlotName + "-0.png"))
         {
             std::ostringstream oss;
             oss << "Did not generate plot";
-            std::ifstream in(outputDir + "/" + PlotName + "_plot_data/" +
-                PlotName + ".log");
+            std::ifstream in(outputDir + "/" + PlotName + "-0_plot_data/" +
+                PlotName + "-0.log");
             if(in)
             {
                 oss << ":" << std::endl;
@@ -93,16 +94,16 @@ int main(int, char** argv)
     try
     {
         if(!std::filesystem::exists(outputDir + "/" + PlotName +
-            "_plot_data.zip"))
+            "-0_plot_data.zip"))
         {
-            throw std::runtime_error("Did zip data directory.");
+            throw std::runtime_error("Did not zip data directory.");
         }
     }
     CATCH
 
     try
     {
-        if(std::filesystem::exists(outputDir + "/" + PlotName + "_plot_data"))
+        if(std::filesystem::exists(outputDir + "/" + PlotName + "-0_plot_data"))
         {
             throw std::runtime_error("Did not delete data directory.");
         }

@@ -123,6 +123,7 @@ namespace pgfplotter
         std::string _xLabel;
         std::string _yLabel;
         std::string _zLabel;
+        std::string _groupLabel;
 
         std::vector<std::array<std::vector<double>, 4>> data;
         std::vector<std::vector<double>> surfaceX;
@@ -177,9 +178,9 @@ namespace pgfplotter
         unsigned int yFormat = 0;
         unsigned int zFormat = 0;
 
-        bool xLog = false;
-        bool yLog = false;
-        bool zLog = false;
+        double _xLog = 0.;
+        double _yLog = 0.;
+        double _zLog = 0.;
 
         bool _showColorbar = false;
 
@@ -205,7 +206,7 @@ namespace pgfplotter
 
         bool _bidirColormap = false;
 
-        std::string plot_src(const std::string& dir, int subplot) const;
+        std::string plotSrc(const std::string& dir, int subplot) const;
 
     public:
         static std::string ToString(double x, unsigned int precision = 10);
@@ -217,11 +218,18 @@ namespace pgfplotter
         static constexpr unsigned int Northwest = 5;
         static constexpr unsigned int Southwest = 6;
 
+        const std::string& title() const;
         void setTitle(const std::string& title);
-        void setXLabel(const std::string& xLabel);
-        void setYLabel(const std::string& yLabel);
-        void setZLabel(const std::string& zLabel);
-        void setWLabel(const std::string& zLabel);
+        const std::string& xLabel() const;
+        void setXLabel(const std::string& label);
+        const std::string& yLabel() const;
+        void setYLabel(const std::string& label);
+        const std::string& zLabel() const;
+        void setZLabel(const std::string& label);
+        const std::string& wLabel() const;
+        void setWLabel(const std::string& label);
+        const std::string& groupLabel() const;
+        void setGroupLabel(const std::string& label);
 
         // Either `z` (height) or `w` (meta) or both may be left empty.
         void draw(const DrawStyle& style, const std::vector<double>& x, const
@@ -263,9 +271,9 @@ namespace pgfplotter
         void setYFormat(unsigned int mode);
         void setZFormat(unsigned int mode);
         void setWFormat(unsigned int mode);
-        void x_log();
-        void y_log();
-        void z_log();
+        void setXLog(double base = 10.);
+        void setYLog(double base = 10.);
+        void setZLog(double base = 10.);
         void showColorbar();
         void scale_x_spacing(double n);
         void scale_y_spacing(double n);
