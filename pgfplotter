@@ -13,10 +13,10 @@ namespace pgfplotter
         std::declval<const T&>())), decltype(std::end(std::declval<const
         T&>()))>::value>;
 
-    std::array<std::vector<double>, 3> mesh_grid(const std::function<double(
+    std::array<std::vector<double>, 3> MeshGrid(const std::function<double(
         double, double)>& f, double xMin, double xMax, double yMin, double yMax,
         std::size_t res);
-    std::array<std::vector<double>, 3> mesh_grid(const std::function<double(
+    std::array<std::vector<double>, 3> MeshGrid(const std::function<double(
         double, double)>& f, double xMin, double xMax, double yMin, double yMax,
         std::size_t xRes, std::size_t yRes);
 

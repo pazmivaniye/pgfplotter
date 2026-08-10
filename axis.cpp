@@ -197,6 +197,16 @@ static std::string convert_marker(char marker)
     return std::string() + marker;
 }
 
+static double floor_log(double x, double b)
+{
+    return std::pow(b, std::floor(std::log(x)/std::log(b)));
+}
+
+static double ceil_log(double x, double b)
+{
+    return std::pow(b, std::ceil(std::log(x)/std::log(b)));
+}
+
 // Write LuaLaTeX to a temporary file, compile and clean up.
 static void compile(const std::string& path, const std::string& src, bool
     deleteData)
@@ -654,8 +664,8 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
 
     std::string dir;
     {
-        std::string tempName;
-        split_path(path, dir, tempName);
+        std::string name;
+        split_path(path, dir, name);
     }
 
     try
@@ -799,24 +809,89 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
         }
     }
 
+    double xMinPosData = std::numeric_limits<double>::max();
+    double xMaxPosData = 0.;
+    if(_xLog > 0.)
+    {
+        for(const auto& m : data)
+        {
+            for(auto n : m[0])
+            {
+                if(n > 0.)
+                {
+                    xMinPosData = std::min(xMinPosData, n);
+                    xMaxPosData = std::max(xMaxPosData, n);
+                }
+            }
+        }
+    }
+
+    double yMinPosData = std::numeric_limits<double>::max();
+    double yMaxPosData = 0.;
+    if(_yLog > 0.)
+    {
+        for(const auto& m : data)
+        {
+            for(auto n : m[1])
+            {
+                if(n > 0.)
+                {
+                    yMinPosData = std::min(yMinPosData, n);
+                    yMaxPosData = std::max(yMaxPosData, n);
+                }
+            }
+        }
+    }
+
+    double zMinPosData = std::numeric_limits<double>::max();
+    double zMaxPosData = 0.;
+    if(_zLog > 0.)
+    {
+        for(const auto& m : data)
+        {
+            for(auto n : m[2])
+            {
+                if(n > 0.)
+                {
+                    zMinPosData = std::min(zMinPosData, n);
+                    zMaxPosData = std::max(zMaxPosData, n);
+                }
+            }
+        }
+    }
+
     if(xMinSet || xSqueeze)
     {
         src += ", xmin = " + to_string(xMinSet ? xMin : xMinData);
+    }
+    else if(xMaxPosData > 0.)
+    {
+        src += ", xmin = " + to_string(floor_log(xMinPosData, _xLog));
     }
     if(xMaxSet || xSqueeze)
     {
         src += ", xmax = " + to_string(xMaxSet ? xMax : xMaxData);
     }
-
-    const double tempYMin = yMinSet ? yMin : yMinData;
-    const double tempYMax = yMaxSet ? yMax : yMaxData;
-    if(yMinSet || ySqueeze)
+    else if(xMaxPosData > 0.)
     {
-        src += ", ymin = " + to_string(tempYMin);
+        src += ", xmax = " + to_string(ceil_log(xMaxPosData, _xLog));
     }
-    if(yMaxSet || ySqueeze)
+
+    if(yMinSet || xSqueeze)
     {
-        src += ", ymax = " + to_string(tempYMax);
+        src += ", ymin = " + to_string(yMinSet ? yMin : yMinData);
+    }
+    else if(yMaxPosData > 0.)
+    {
+        src += ", ymin = " + to_string(floor_log(yMinPosData, _yLog));
+    }
+    if(yMaxSet || xSqueeze)
+    {
+        src += ", ymax = " + to_string(yMaxSet ? yMax : yMaxData);
+    }
+    else if(yMaxPosData > 0.)
+    {
+        src += ", ymax = " + to_string(ceil_log(yMaxPosData, _yLog));
     }
 
     // Z/meta max/min don't seem to affect contour placement in contour plots.
@@ -828,6 +903,14 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
         }
         src += ", point meta min = " + to_string(zMin);
     }
+    else if(zMaxPosData > 0.)
+    {
+        if(_viewAngles[0] != 0. || _viewAngles[1] != 90.)
+        {
+            src += ", zmin = " + to_string(floor_log(zMinPosData, _zLog));
+        }
+        src += ", point meta min = " + to_string(floor_log(zMinPosData, _zLog));
+    }
     if(zMaxSet)
     {
         if(_viewAngles[0] != 0. || _viewAngles[1] != 90.)
@@ -835,6 +918,14 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
             src += ", zmax = " + to_string(zMax);
         }
         src += ", point meta max = " + to_string(zMax);
+    }
+    else if(zMaxPosData > 0.)
+    {
+        if(_viewAngles[0] != 0. || _viewAngles[1] != 90.)
+        {
+            src += ", zmax = " + to_string(ceil_log(zMaxPosData, _zLog));
+        }
+        src += ", point meta max = " + to_string(ceil_log(zMaxPosData, _zLog));
     }
 
     if(!_xLabel.empty())

@@ -1,13 +1,13 @@
 #include "pgfplotter"
 
-std::array<std::vector<double>, 3> pgfplotter::mesh_grid(const std::function<
+std::array<std::vector<double>, 3> pgfplotter::MeshGrid(const std::function<
     double(double, double)>& f, double xMin, double xMax, double yMin, double
     yMax, std::size_t res)
 {
-    return mesh_grid(f, xMin, xMax, yMin, yMax, res, res);
+    return MeshGrid(f, xMin, xMax, yMin, yMax, res, res);
 }
 
-std::array<std::vector<double>, 3> pgfplotter::mesh_grid(const std::function<
+std::array<std::vector<double>, 3> pgfplotter::MeshGrid(const std::function<
     double(double, double)>& f, double xMin, double xMax, double yMin, double
     yMax, std::size_t xRes, std::size_t yRes)
 {
