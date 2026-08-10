@@ -46,12 +46,13 @@ int main(int, char** argv)
     try
     {
         const auto data = pgf::mesh_grid([](double x, double y){ return std::
-            sin(x)*std::sin(y); }, 0., 1., 0., 1., 50);
+            sin(x)*std::sin(y); }, 0., 1., 1./8., 8., 50);
         p.surf(data[0], data[1], data[2]);
         p.setXMin(0.);
         p.setXMax(1.);
-        p.setYMin(0.);
-        p.setYMax(1.);
+        p.setYMin(1./8.);
+        p.setYMax(8.);
+        p.setYLog(2.);
         p.setZMin(0.);
         p.setZMax(1.);
         p.setView(45., 45.);

@@ -714,7 +714,7 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
 
     if(_xLog > 0.)
     {
-        src += ", xmode = log";
+        src += ", xmode = log, xtick distance = " + to_string(_xLog);
         if(_xLog != 10.)
         {
             src += ", log basis x = " + to_string(_xLog);
@@ -722,7 +722,7 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
     }
     if(_yLog > 0.)
     {
-        src += ", ymode = log";
+        src += ", ymode = log, ytick distance = " + to_string(_yLog);
         if(_yLog != 10.)
         {
             src += ", log basis y = " + to_string(_yLog);
@@ -730,7 +730,7 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
     }
     if(_zLog > 0.)
     {
-        src += ", zmode = log";
+        src += ", zmode = log, ztick distance = " + to_string(_zLog);
         if(_zLog != 10.)
         {
             src += ", log basis z = " + to_string(_zLog);
