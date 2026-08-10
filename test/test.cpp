@@ -57,7 +57,8 @@ int main(int, char** argv)
         p.setView(45., 45.);
         p.setXLabel("$x$ (\\si{\\lu})");
         p.setYLabel("$y$ (\\si{\\arcsec})");
-        p.setZLabel("$\\dv{^2x}{y^2}$ (\\si{\\lu^2\\per\\arcsec^2})");
+        p.setZLabel("$\\frac{\\dd^2x}{\\dd y^2}$ (\\si{\\lu^2\\per\\arcsec^2})"
+            );
         p.setGroupLabel("Group Label");
         p.setTitle("Test Plot");
         p.resize(0.6, 0.6);

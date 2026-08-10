@@ -186,10 +186,6 @@ static std::string convert_marker(char marker)
     return std::string() + marker;
 }
 
-// Lines need to be broken up when using a temporary *.tex file because LaTeX
-// can only handle input file lines below a certain length.
-static const std::string endl = "\n";
-
 // Convert numbers to strings without sacrificing precision.
 std::string pgfplotter::Axis::ToString(double x, unsigned int precision)
 {
@@ -246,7 +242,7 @@ static void compile(const std::string& path, const std::string& src, bool
             throw std::runtime_error("Unable to open output file \"" +
                 makefilePath + "\".");
         }
-        out << "print-% : ; @echo $* = $($*)" << std::endl << std::endl;
+        out << "print-% : ; @echo \"$* = $($*)\"" << std::endl << std::endl;
         out << name << ".png: export TERM = dumb" << std::endl;
         out << name << ".png: " << name << ".pdf" << std::endl;
         out << "\tpdftoppm -png -r 300 " << name << ".pdf > " << name << ".png "
@@ -338,78 +334,77 @@ static void compile(const std::string& path, const std::string& src, bool
 }
 
 // Preamble
-static const std::string src0 =
-    "\\IfFileExists{standalone.cls}{}{\\errmessage{The \"standalone\" package i"
-        "s required.}}" + endl +
-    "\\documentclass{standalone}" + endl +
-    "\\usepackage{xstring}" + endl +
-    "\\makeatletter" + endl +
-    "\\@ifclasslater{standalone}{2018/03/26}{}{\\usepackage{luatex85}}" + endl +
-    // If `newtx` is new enough, use option `newsu`.
-    "\\IfFileExists{newtx.sty}%" + endl +
-    "{%" + endl +
-    "    \\newread\\myread" + endl +
-    "    \\openin\\myread=newtx.sty" + endl +
-    "    \\@whilesw\\ifx\\mydone\\undefined\\fi%" + endl +
-    "    {%" + endl +
-    "        \\readline\\myread to \\myline" + endl +
-    "        \\StrGobbleLeft{\\myline}{5}[\\mytempa]" + endl +
-    "        \\StrSplit{\\mytempa}{8}{\\mytempa}{\\mytempb}" + endl +
-    "        \\ifnum\\pdf@strcmp{\\mytempa}{filedate}=0\\relax\\def\\mydone\\fi"
-        + endl +
-    "    }" + endl +
-    "    \\closein\\myread" + endl +
-    "    \\makeatother" + endl +
-    "    \\StrGobbleLeft{\\myline}{14}[\\newtxdate]" + endl +
-    "    \\StrLeft{\\newtxdate}{10}[\\newtxdate]" + endl +
-    "    \\StrSplit{\\newtxdate}{4}{\\newtxyear}{\\newtxmonth}" + endl +
-    "    \\StrGobbleLeft{\\newtxmonth}{1}[\\newtxmonth]" + endl +
-    "    \\StrSplit{\\newtxmonth}{2}{\\newtxmonth}{\\newtxday}" + endl +
-    "    \\StrGobbleLeft{\\newtxday}{1}[\\newtxday]" + endl +
-    "    \\def\\usenewsu{1} \\ifnum\\newtxyear<2023\\def\\usenewsu{0}\\fi \\ifn"
-        "um\\newtxyear=2023\\ifnum\\newtxmonth<8\\def\\usenewsu{0}\\fi\\fi \\if"
-        "num\\newtxyear=2023\\ifnum\\newtxmonth=8\\ifnum\\newtxday<21\\def\\use"
-        "newsu{0}\\fi\\fi\\fi" + endl +
-    "    \\ifnum\\usenewsu=1\\usepackage[newsu]{newtx}\\else\\usepackage{newtx}"
-        "\\fi" + endl +
-    "}{%" + endl +
-    "    \\usepackage{newtxtext}" + endl +
-    "    \\usepackage{newtxmath}" + endl +
-    "}" + endl +
-    "\\usepackage{bm}" + endl +
-    "\\usepackage{tikz}" + endl +
-    "\\usepackage{pgfplots}" + endl +
-    "\\usepackage{xcolor}" + endl +
-    "\\usepackage{siunitx}" + endl +
-    "\\sisetup{exponent-product = \\ensuremath{\\cdot}, inter-unit-product = \\"
-        "ensuremath{\\cdot}, group-separator = {,}, group-digits = integer, per"
-        "-mode = symbol}" + endl +
-    "\\DeclareSIUnit[number-unit-product = ]\\percent{\\char`\\%}" + endl +
-    "\\DeclareSIUnit\\au{AU}" + endl +
-    "\\DeclareSIUnit\\lu{LU}" + endl +
-    "\\DeclareSIUnit\\tu{TU}" + endl +
-    "\\DeclareSIUnit\\mu{MU}" + endl +
-    "\\DeclareSIUnit\\arcsec{arcsec}" + endl +
-    "\\pgfplotsset{compat = 1.12}" + endl +
-    "\\usetikzlibrary{pgfplots.groupplots}" + endl +
-    "\\NewDocumentCommand\\trans{}{\\mathsf{T}}" + endl +
-    "\\NewDocumentCommand\\args{m}{\\mathchoice{\\!\\left(#1\\right)}{\\!\\left"
-        "(#1\\right)}{\\left(#1\\right)}{\\left(#1\\right)}}" + endl +
-    "\\NewDocumentCommand\\notimplies{}{\\centernot\\implies}" + endl +
-    "\\NewDocumentCommand\\prob{m}{\\operatorname{P}\\!\\left\\{#1\\right\\}}" +
-        endl +
-    "\\NewDocumentCommand\\expect{m}{\\operatorname{E}\\!\\left[#1\\right]}" +
-        endl +
-    "\\NewDocumentCommand\\given{}{\\;\\middle|\\;}" + endl +
-    "\\NewDocumentCommand\\placeholder{}{\\cdot}" + endl +
-    "\\NewDocumentCommand\\argmax{}{\\operatornamewithlimits{arg\\,max}}" + endl
-        +
-    "\\NewDocumentCommand\\lab{}{\\operatorname{lab}}" + endl +
-    "\\NewDocumentCommand\\kronecker{mm}{\\delta_{#1}\\!\\left[#2\\right]}" +
-        endl +
-    "\\NewDocumentCommand\\dd{}{\\operatorname{d}}" + endl +
-    "\\NewDocumentCommand\\dv{mm}{\\frac{\\dd#1}{\\dd#2}}" + endl +
-    "\\NewDocumentCommand\\pdv{mm}{\\frac{\\partial#1}{\\partial#2}}" + endl;
+static const std::string src0 = 1 + R"===(
+\IfFileExists{standalone.cls}{}{\errmessage{The "standalone" package is
+    required.}}
+\documentclass{standalone}
+\usepackage{xstring}
+\makeatletter
+\@ifclasslater{standalone}{2018/03/26}{}{\usepackage{luatex85}}
+% If newtx is new enough, use option `newsu`.
+\IfFileExists{newtx.sty}%
+{%
+    \newread\myread
+    \openin\myread=newtx.sty
+    \@whilesw\ifx\mydone\undefined\fi%
+    {%
+        \readline\myread to \myline
+        \StrGobbleLeft{\myline}{5}[\mytempa]
+        \StrSplit{\mytempa}{8}{\mytempa}{\mytempb}
+        \ifnum\pdf@strcmp{\mytempa}{filedate}=0\relax\def\mydone\fi
+    }
+    \closein\myread
+    \makeatother
+    \StrGobbleLeft{\myline}{14}[\newtxdate]
+    \StrLeft{\newtxdate}{10}[\newtxdate]
+    \StrSplit{\newtxdate}{4}{\newtxyear}{\newtxmonth}
+    \StrGobbleLeft{\newtxmonth}{1}[\newtxmonth]
+    \StrSplit{\newtxmonth}{2}{\newtxmonth}{\newtxday}
+    \StrGobbleLeft{\newtxday}{1}[\newtxday]
+    \def\usenewsu{1}
+    \ifnum\newtxyear<2023\def\usenewsu{0}\fi
+    \ifnum\newtxyear=2023\ifnum\newtxmonth<8\def\usenewsu{0}\fi\fi
+    \ifnum\newtxyear=2023\ifnum\newtxmonth=8\ifnum\newtxday<21\def\usenewsu{0}%
+        \fi\fi\fi
+    \ifnum\usenewsu=1\usepackage[newsu]{newtx}\else\usepackage{newtx}\fi
+}{%
+    \usepackage{newtxtext}
+    \usepackage{newtxmath}
+}
+\usepackage{bm}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{xcolor}
+\usepackage{siunitx}
+\sisetup{per-mode = symbol, exponent-product = \ensuremath{\cdot},
+    inter-unit-product = \ensuremath{\cdot}, group-separator = {,}, group-digits
+    = integer}
+\DeclareSIUnit[number-unit-product = ]\percent{\char`\%}
+\DeclareSIUnit\GB{GB}
+\DeclareSIUnit\arcsec{arcsec}
+\DeclareSIUnit\au{AU}
+\DeclareSIUnit\lu{LU}
+\DeclareSIUnit\mu{MU}
+\DeclareSIUnit\rev{rev}
+\DeclareSIUnit\tu{TU}
+\pgfplotsset{compat = 1.12}
+\usetikzlibrary{pgfplots.groupplots}
+\NewDocumentCommand\trans{}{\mathsf{T}}
+\NewDocumentCommand\args{m}{\mathopen{}\left(\textstyle#1\right)}
+\NewDocumentCommand\notimplies{}{\centernot\implies}
+\NewDocumentCommand\prob{m}{\operatorname{P}\mathopen{}\left\{\textstyle#1%
+    \right\}}
+\NewDocumentCommand\expect{m}{\operatorname{E}\mathopen{}\left[\textstyle#1%
+    \right]}
+\NewDocumentCommand\given{}{\;\middle|\;}
+\NewDocumentCommand\placeholder{}{\cdot}
+\NewDocumentCommand\argmin{}{\operatornamewithlimits{arg\,min}}
+\NewDocumentCommand\argmax{}{\operatornamewithlimits{arg\,max}}
+\NewDocumentCommand\lab{m}{\operatorname{lab}\args{#1}}
+\NewDocumentCommand\kronecker{mm}{\delta_{#1}\mathopen{}\left[\textstyle#2%
+    \right]}
+\NewDocumentCommand\dd{}{\operatorname{d}}
+)===";
 static const std::string src9 = []()
     {
         const std::size_t numColors = pgfplotter::Color::Defaults.size();
@@ -444,23 +439,23 @@ static const std::string src9 = []()
         oss << "}}\n";
         return oss.str();
     }();
-static const std::string src2a = "\\begin{document}" + endl +
+static const std::string src2a = "\\begin{document}\n"
     "\\begin{tikzpicture}[define rgb/.code = {\\definecolor{mycolor}{RGB}{#1}},"
-        " rgb color/.style = {define rgb = {#1}, mycolor}]" + endl +
+        " rgb color/.style = {define rgb = {#1}, mycolor}]\n"
     "\\begin{groupplot}[group style = {group name = subplots, columns = 1, rows"
         " = ";
-static const std::string src2b = ", vertical sep = 1.3cm}]" + endl;
-static const std::string src2bNoSep = ", vertical sep = 0.5cm}]" + endl;
+static const std::string src2b = ", vertical sep = 1.3cm}]\n";
+static const std::string src2bNoSep = ", vertical sep = 0.5cm}]\n";
 // Axis options
 static const std::string src1 = ", cycle list name = colorcycle"
     ", grid = major"
     ", minor tick num = 4"
     ", legend cell align = {left}";
 static const std::string src8 = ", label style = {font = \\" + FontSize + "}"
-    "]" + endl;
-static const std::string src3 = "};" + endl;
-static const std::string src4 = "\\end{groupplot}" + endl;
-static const std::string src5 = "\\end{tikzpicture}" + endl + "\\end{document}";
+    "]\n";
+static const std::string src3 = "};\n";
+static const std::string src4 = "\\end{groupplot}\n";
+static const std::string src5 = "\\end{tikzpicture}\n\\end{document}";
 
 const std::string& pgfplotter::Axis::title() const
 {
@@ -1205,7 +1200,7 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
     {
         src += "\\fill[black, opacity = 0.1] (" + ToString(_bgBands[i]) + ", " +
             ToString(yMin) + ") rectangle (" + ToString(_bgBands[i + 1]) + ", "
-            + ToString(yMax) + ");" + endl;
+            + ToString(yMax) + ");\n";
     }
 
     for(std::size_t i = 0, sz = surfaceX.size(); i < sz; ++i)
@@ -1296,7 +1291,7 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
             src += "(" + ToString(fillX[i][j]) + ", " + ToString(fillY[i][j]) +
                 ")--";
         }
-        src += "cycle;" + endl;
+        src += "cycle;\n";
     }
 
     for(std::size_t i = 0, sz = data.size(); i < sz; ++i)
@@ -1406,7 +1401,7 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
         {
             src += "{" + n + "}, ";
         }
-        src += "}" + endl;
+        src += "}\n";
     }
 
     return src;
@@ -1450,7 +1445,7 @@ void pgfplotter::plot(const std::string& path, const std::vector<const
             {
                 src += ",";
             }
-            src += endl + "    ";
+            src += "\n    ";
         }
         src += "in coordinate (west) at (";
         if(p.size() == 1)
@@ -1479,8 +1474,8 @@ void pgfplotter::plot(const std::string& path, const std::vector<const
             }
             src += ")/" + std::to_string(p.size()) + "}";
         }
-        src += ");" + endl + "\\node[rotate = 90, font = \\" + FontSize +
-            "] at (west) {" + p[0]->_groupLabel + "};" + endl;
+        src += ");\n\\node[rotate = 90, font = \\" + FontSize + "] at (west) {"
+            + p[0]->_groupLabel + "};\n";
     }
     src += src5;
 
