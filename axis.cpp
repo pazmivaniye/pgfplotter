@@ -1,5 +1,5 @@
 #include "pgfplotter"
-#include "detect_os.hpp"
+#include "system.hpp"
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -7,334 +7,14 @@
 #include <fstream>
 #include <algorithm>
 #include <filesystem>
-#ifdef OS_WINDOWS
-#include <windows.h>
-#else
-#include <unistd.h>
-#include <sys/wait.h>
-#include <sys/fcntl.h>
-#include <cstring>
-#endif
-
-#ifdef OS_WINDOWS
-static void system_call(const std::string& file, const std::vector<std::string>&
-    args)
-{
-    std::string cmd = file;
-    for(const auto& n : args)
-    {
-        cmd += " \"" + n + "\"";
-    }
-    STARTUPINFOA si = {};
-    si.cb = sizeof(si);
-    si.dwFlags = STARTF_USESHOWWINDOW;
-    si.wShowWindow = SW_HIDE;
-    SECURITY_ATTRIBUTES sa = {};
-    sa.nLength = sizeof(sa);
-    sa.bInheritHandle = true;
-    sa.lpSecurityDescriptor = nullptr;
-    HANDLE g_hChildStd_IN_Rd = nullptr;
-    HANDLE g_hChildStd_IN_Wr = nullptr;
-    HANDLE g_hChildStd_OUT_Rd = nullptr;
-    HANDLE g_hChildStd_OUT_Wr = nullptr;
-    if(!CreatePipe(&g_hChildStd_OUT_Rd, &g_hChildStd_OUT_Wr, &sa, 0))
-    {
-        throw std::runtime_error("Failed to create output pipe: Error " + std::
-            to_string(GetLastError()) + ".");
-    }
-    if(!SetHandleInformation(g_hChildStd_OUT_Rd, HANDLE_FLAG_INHERIT, 0))
-    {
-        throw std::runtime_error("Failed to set output pipe to inherit: Error "
-            + std::to_string(GetLastError()) + ".");
-    }
-    if(!CreatePipe(&g_hChildStd_IN_Rd, &g_hChildStd_IN_Wr, &sa, 0))
-    {
-        throw std::runtime_error("Failed to create input pipe: Error " + std::
-            to_string(GetLastError()) + ".");
-    }
-    if(!SetHandleInformation(g_hChildStd_IN_Wr, HANDLE_FLAG_INHERIT, 0))
-    {
-        throw std::runtime_error("Failed to set input pipe to inherit: Error " +
-            std::to_string(GetLastError()) + ".");
-    }
-    si.hStdError = g_hChildStd_OUT_Wr;
-    si.hStdOutput = g_hChildStd_OUT_Wr;
-    si.hStdInput = g_hChildStd_IN_Rd;
-    si.dwFlags |= STARTF_USESTDHANDLES;
-    PROCESS_INFORMATION pi;
-    if(!CreateProcessA(nullptr, const_cast<char*>(cmd.c_str()), nullptr,
-        nullptr, true, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi))
-    {
-        throw std::runtime_error("Failed to create process: Error " + std::
-            to_string(GetLastError()) + ".");
-    }
-    WaitForSingleObject(pi.hProcess, INFINITE);
-    DWORD exitCode;
-    if(!GetExitCodeProcess(pi.hProcess, &exitCode))
-    {
-        throw std::runtime_error("Failed to get exit code: Error " + std::
-            to_string(GetLastError()) + ".");
-    }
-    if(exitCode == STILL_ACTIVE)
-    {
-        throw std::runtime_error("Wait returned before process completed.");
-    }
-    if(exitCode)
-    {
-        throw std::runtime_error("System call returned " + std::to_string(
-            exitCode) + ".");
-    }
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
-    CloseHandle(g_hChildStd_OUT_Wr);
-    g_hChildStd_OUT_Wr = nullptr;
-    CloseHandle(g_hChildStd_IN_Rd);
-    g_hChildStd_OUT_Wr = nullptr;
-}
-#else
-static void system_call(const std::string& file, const std::vector<std::string>&
-    args)
-{
-    const auto pid = fork();
-    if(pid > 0)
-    {
-        int status;
-        if(waitpid(pid, &status, 0) < 0)
-        {
-            throw std::runtime_error("Wait failed.");
-        }
-        if(!WIFEXITED(status))
-        {
-            throw std::runtime_error("System call did not exit normally.");
-        }
-        const auto exitCode = WEXITSTATUS(status);
-        if(exitCode)
-        {
-            throw std::runtime_error("System call returned " + std::to_string(
-                exitCode) + ".");
-        }
-    }
-    else if(pid == 0)
-    {
-        std::vector<const char*> argv = {file.c_str()};
-        for(const auto& n : args)
-        {
-            argv.push_back(n.c_str());
-        }
-        argv.push_back(nullptr);
-        const auto fd = open("/dev/null", O_WRONLY);
-        if(fd < 0)
-        {
-            std::cerr << "Warning: Failed to open \"/dev/null\": " << std::
-                strerror(errno) << std::endl;
-        }
-        else
-        {
-            dup2(fd, 1);
-            dup2(fd, 2);
-            close(fd);
-        }
-        const int status = execvp(argv[0], const_cast<char**>(argv.data()));
-        std::exit(status);
-    }
-    else
-    {
-        throw std::runtime_error("Fork failed: " + std::string(std::strerror(
-            errno)) + ".");
-    }
-}
-#endif
 
 static const std::string FontSize = "footnotesize";
 static const std::string LegendFontSize = "scriptsize";
 static const std::string TitleSize = "normalsize";
-
 static const std::string Suffix = "_plot_data";
+static constexpr unsigned int Precision = 10;
 
-static std::string convert_marker(char marker)
-{
-    if(marker <= 0)
-    {
-        throw std::runtime_error("Tried to convert unprintable marker.");
-    }
-    if(marker == '^')
-    {
-        return "triangle";
-    }
-    if(marker == 's')
-    {
-        return "square";
-    }
-    if(marker == 'S')
-    {
-        return "square*";
-    }
-    if(marker == 'd')
-    {
-        return "square, mark options = {line join = miter, rotate = 45, scale ="
-            " 0.6}";
-    }
-    if(marker == 'D')
-    {
-        return "square*, mark options = {line join = miter, rotate = 45, scale "
-            "= 0.6}";
-    }
-    if(marker == 'x')
-    {
-        return "x, mark options = {line join = miter, scale = 1.5}";
-    }
-    return std::string() + marker;
-}
-
-// Convert numbers to strings without sacrificing precision.
-std::string pgfplotter::Axis::ToString(double x, unsigned int precision)
-{
-    std::stringstream ss;
-    ss << std::setprecision(precision) << x;
-    return ss.str();
-}
-
-// Extract directories from path.
-static void split_path(const std::string& path, std::string& dir, std::string&
-    name)
-{
-    const std::filesystem::path p(path);
-    dir = p.parent_path().string();
-    name = p.filename().string();
-}
-
-// Write LuaLaTeX to a temporary file, compile and clean up.
-static void compile(const std::string& path, const std::string& src, bool
-    deleteData)
-{
-    if(path.find('"') != std::string::npos)
-    {
-        throw std::runtime_error("Plot path cannot contain double quote charact"
-            "er.");
-    }
-
-    std::string dir;
-    std::string name;
-    split_path(path, dir, name);
-
-    if(name.find('\t') != std::string::npos || name.find(' ') != std::string::
-        npos)
-    {
-        throw std::runtime_error("Plot name cannot contain whitespace.");
-    }
-
-    {
-        const std::string texPath = path + Suffix + "/" + name + ".tex";
-        std::ofstream out(texPath);
-        if(!out)
-        {
-            throw std::runtime_error("Unable to open output file \"" + texPath +
-                "\".");
-        }
-        out << src << std::endl;
-    }
-
-    {
-        const std::string makefilePath = path + Suffix + "/Makefile";
-        std::ofstream out(makefilePath);
-        if(!out)
-        {
-            throw std::runtime_error("Unable to open output file \"" +
-                makefilePath + "\".");
-        }
-        out << "print-% : ; @echo \"$* = $($*)\"" << std::endl << std::endl;
-        out << name << ".png: export TERM = dumb" << std::endl;
-        out << name << ".png: " << name << ".pdf" << std::endl;
-        out << "\tpdftoppm -png -r 300 " << name << ".pdf > " << name << ".png "
-            "\\" << std::endl;
-        out << "\t    && $(RM) " << name << ".pdf" << std::endl;
-        out << std::endl;
-        out << "ifeq ($(OS), Windows_NT)" << std::endl;
-        out << name << ".pdf: " << name << ".ps" << std::endl;
-        out << "\tMSYS2_ARG_CONV_EXCL=\"*\" ps2pdf14 -dPDFSETTINGS=/prepress "
-            << name << ".ps " << name << ".pdf \\" << std::endl;
-        out << "\t    && $(RM) " << name << ".ps" << std::endl;
-        out << "else" << std::endl;
-        out << name << ".pdf: " << name << ".ps" << std::endl;
-        out << "\tps2pdf14 -dPDFSETTINGS=/prepress " << name << ".ps " << name
-            << ".pdf \\" << std::endl;
-        out << "\t    && $(RM) " << name << ".ps" << std::endl;
-        out << "endif" << std::endl;
-        out << std::endl;
-        out << name << ".ps: " << name << ".tex $(wildcard *.data) $(wildcard "
-            "*.surf)" << std::endl;
-        out << "\tlualatex -halt-on-error -shell-escape -interaction=batchmode "
-            << name << " \\" << std::endl;
-        out << "\t    && mv " << name << ".pdf " << name << "_unpressed.pdf \\"
-            << std::endl;
-        out << "\t    && $(RM) " << name << ".aux \\" << std::endl;
-        out << "\t    && $(RM) " << name << ".log \\" << std::endl;
-        out << "\t    && $(RM) " << name << "_contortmp*.dat \\" << std::endl;
-        out << "\t    && $(RM) " << name << "_contortmp*.script \\" << std::
-            endl;
-        out << "\t    && $(RM) " << name << "_contortmp*.table \\" << std::endl;
-        out << "\t    && pdf2ps " << name << "_unpressed.pdf \\" << std::endl;
-        out << "\t    && mv " << name << "_unpressed.ps " << name << ".ps \\" <<
-            std::endl;
-        out << "\t    && $(RM) " << name << "_unpressed.pdf" << std::endl;
-    }
-
-    try
-    {
-        system_call("make", {"-C", path + Suffix});
-    }
-    catch(const std::exception& e)
-    {
-        std::cerr << "Warning: Failed to plot \"" << name << ".png\": " << e.
-            what() << std::endl;
-        return;
-    }
-
-    try
-    {
-        const std::string pngPath = path + Suffix + "/" + name + ".png";
-        const std::string newPath = (dir.empty() ? "." : dir) + "/" + name +
-            ".png";
-        std::filesystem::rename(pngPath, newPath);
-    }
-    catch(const std::exception& e)
-    {
-        std::cerr << "Warning: Failed to move \"" << name << ".png\": " << e.
-            what() << std::endl;
-        return;
-    }
-
-    std::cout << "Plotted \"" << path << ".png\"" << std::endl;
-
-    if(deleteData)
-    {
-        try
-        {
-            std::filesystem::remove_all(path + Suffix);
-        }
-        catch(const std::exception& e)
-        {
-            std::cerr << "Warning: Failed to delete plot data for \"" << path <<
-                "\": " << e.what() << std::endl;
-        }
-    }
-    else
-    {
-        try
-        {
-            system_call("zip", {"-jqr", path + Suffix + ".zip", path + Suffix});
-            std::filesystem::remove_all(path + Suffix);
-        }
-        catch(const std::exception& e)
-        {
-            std::cerr << "Warning: Failed to archive and clean up plot data for"
-                " \"" << path << "\": " << e.what() << std::endl;
-        }
-    }
-}
-
-// Preamble
-static const std::string src0 = 1 + R"===(
+static const std::string CommonPreamble = 1 + R"===(
 \IfFileExists{standalone.cls}{}{\errmessage{The "standalone" package is
     required.}}
 \documentclass{standalone}
@@ -456,6 +136,170 @@ static const std::string src8 = ", label style = {font = \\" + FontSize + "}"
 static const std::string src3 = "};\n";
 static const std::string src4 = "\\end{groupplot}\n";
 static const std::string src5 = "\\end{tikzpicture}\n\\end{document}";
+
+static const std::string Makefile = 1 + R"===(
+print-% : ; @echo "$* = $($*)"
+plot.png: export TERM = dumb
+plot.png: plot.pdf
+	pdftoppm -png -r 300 plot.pdf > plot.png
+	$(RM) plot.pdf
+ifeq ($(OS), Windows_NT)
+plot.pdf: plot.ps
+	MSYS2_ARG_CONV_EXCL='*' ps2pdf14 -dPDFSETTINGS=/prepress plot.ps \
+	    plot.pdf
+	$(RM) plot.ps
+else
+plot.pdf: plot.ps
+	ps2pdf14 -dPDFSETTINGS=/prepress plot.ps plot.pdf
+	$(RM) plot.ps
+endif
+plot.ps: plot.tex $(wildcard *.data) $(wildcard *.surf)
+	lualatex -halt-on-error -shell-escape -interaction=batchmode plot
+	mv plot.pdf plot_unpressed.pdf
+	$(RM) plot.{aux,log} plot_contourtmp*.{dat,script,table}
+	pdf2ps plot_unpressed.pdf
+	mv plot_unpressed.ps plot.ps
+	$(RM) plot_unpressed.pdf
+)===";
+
+static std::string convert_marker(char marker)
+{
+    if(marker <= 0)
+    {
+        throw std::runtime_error("Tried to convert unprintable marker.");
+    }
+    if(marker == '^')
+    {
+        return "triangle";
+    }
+    if(marker == 's')
+    {
+        return "square";
+    }
+    if(marker == 'S')
+    {
+        return "square*";
+    }
+    if(marker == 'd')
+    {
+        return "square, mark options = {line join = miter, rotate = 45, scale ="
+            " 0.6}";
+    }
+    if(marker == 'D')
+    {
+        return "square*, mark options = {line join = miter, rotate = 45, scale "
+            "= 0.6}";
+    }
+    if(marker == 'x')
+    {
+        return "x, mark options = {line join = miter, scale = 1.5}";
+    }
+    return std::string() + marker;
+}
+
+// Write LuaLaTeX to a temporary file, compile and clean up.
+static void compile(const std::string& path, const std::string& src, bool
+    deleteData)
+{
+    if(path.find('"') != std::string::npos)
+    {
+        throw std::runtime_error("Plot path cannot contain double quote charact"
+            "er.");
+    }
+
+    std::string dir;
+    std::string name;
+    pgfplotter::split_path(path, dir, name);
+
+    if(name.find('\t') != std::string::npos || name.find(' ') != std::string::
+        npos)
+    {
+        throw std::runtime_error("Plot name cannot contain whitespace.");
+    }
+
+    {
+        const std::string texPath = path + Suffix + "/plot.tex";
+        std::ofstream out(texPath);
+        if(!out)
+        {
+            throw std::runtime_error("Unable to open output file \"" + texPath +
+                "\".");
+        }
+        out << src << std::endl;
+    }
+
+    {
+        const std::string makefilePath = path + Suffix + "/Makefile";
+        std::ofstream out(makefilePath);
+        if(!out)
+        {
+            throw std::runtime_error("Unable to open output file \"" +
+                makefilePath + "\".");
+        }
+        out << Makefile;
+    }
+
+    try
+    {
+        pgfplotter::system_call("make", {"-C", path + Suffix});
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << "Warning: Failed to plot \"" << name << ".png\": " << e.
+            what() << std::endl;
+        return;
+    }
+
+    try
+    {
+        const std::string pngPath = path + Suffix + "/plot.png";
+        const std::string newPath = (dir.empty() ? "." : dir) + "/" + name +
+            ".png";
+        std::filesystem::rename(pngPath, newPath);
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << "Warning: Failed to move \"" << name << ".png\": " << e.
+            what() << std::endl;
+        return;
+    }
+
+    std::cout << "Plotted \"" << path << ".png\"" << std::endl;
+
+    if(deleteData)
+    {
+        try
+        {
+            std::filesystem::remove_all(path + Suffix);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << "Warning: Failed to delete plot data for \"" << path <<
+                "\": " << e.what() << std::endl;
+        }
+    }
+    else
+    {
+        try
+        {
+            pgfplotter::system_call("zip", {"-jqr", path + Suffix + ".zip", path
+                + Suffix});
+            std::filesystem::remove_all(path + Suffix);
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << "Warning: Failed to archive and clean up plot data for"
+                " \"" << path << "\": " << e.what() << std::endl;
+        }
+    }
+}
+
+static std::string to_string(double x)
+{
+    std::stringstream ss;
+    ss << std::setprecision(Precision) << x;
+    return ss.str();
+}
 
 const std::string& pgfplotter::Axis::title() const
 {
@@ -835,17 +679,17 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
             path + Suffix + "\": " + e.what());
     }
 
-    std::string src = "\\nextgroupplot[width = " + ToString(relWidth) + "\\text"
-        "width, height = " + ToString(relHeight) + "\\textwidth, colormap name "
-        "= ";
+    std::string src = "\\nextgroupplot[width = " + to_string(relWidth) + "\\tex"
+        "twidth, height = " + to_string(relHeight) + "\\textwidth, colormap nam"
+        "e = ";
     src += _bidirColormap ? "bidir" : "viridis";
     src += ", every axis plot/.append style = {ultra thick, line join = bevel, "
-        "mark options = {line join = miter}}, view = {" + ToString(_viewAngles[
-        0]) + "}{" + ToString(_viewAngles[1]) + "}, clip mode = individual, col"
-        "orbar style = {font = \\" + FontSize + ", y tick label style = {";
+        "mark options = {line join = miter}}, view = {" + to_string(_viewAngles[
+        0]) + "}{" + to_string(_viewAngles[1]) + "}, clip mode = individual, co"
+        "lorbar style = {font = \\" + FontSize + ", y tick label style = {";
     if(zPrecision >= 0)
     {
-        src += ", /pgf/number format/precision = " + ToString(zPrecision) +
+        src += ", /pgf/number format/precision = " + to_string(zPrecision) +
             ", /pgf/number format/zerofill";
     }
     if(zFormat)
@@ -873,7 +717,7 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
         src += ", xmode = log";
         if(_xLog != 10.)
         {
-            src += ", log basis x = " + ToString(_xLog);
+            src += ", log basis x = " + to_string(_xLog);
         }
     }
     if(_yLog > 0.)
@@ -881,7 +725,7 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
         src += ", ymode = log";
         if(_yLog != 10.)
         {
-            src += ", log basis y = " + ToString(_yLog);
+            src += ", log basis y = " + to_string(_yLog);
         }
     }
     if(_zLog > 0.)
@@ -889,33 +733,33 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
         src += ", zmode = log";
         if(_zLog != 10.)
         {
-            src += ", log basis z = " + ToString(_zLog);
+            src += ", log basis z = " + to_string(_zLog);
         }
     }
 
     if(xSpacing)
     {
         src += ", x coord trafo/.code = {\\pgfluamathparse{\\pgfmathresult/" +
-            ToString(xSpacing) +"}}, x coord inv trafo/.code = {\\pgfluamathpa"
-            "rse{\\pgfmathresult*" + ToString(xSpacing) + "}}";
+            to_string(xSpacing) +"}}, x coord inv trafo/.code = {\\pgfluamathpa"
+            "rse{\\pgfmathresult*" + to_string(xSpacing) + "}}";
     }
     else if(xOffset)
     {
         src += ", x coord trafo/.code = {\\pgfluamathparse{\\pgfmathresult - " +
-            ToString(xOffset) +"}}, x coord inv trafo/.code = {\\pgfluamathpa"
-            "rse{\\pgfmathresult + " + ToString(xOffset) + "}}";
+            to_string(xOffset) +"}}, x coord inv trafo/.code = {\\pgfluamathpa"
+            "rse{\\pgfmathresult + " + to_string(xOffset) + "}}";
     }
     if(ySpacing)
     {
         src += ", y coord trafo/.code = {\\pgfluamathparse{\\pgfmathresult/" +
-            ToString(ySpacing) +"}}, y coord inv trafo/.code = {\\pgfluamathpa"
-            "res{\\pgfmathresult*" + ToString(ySpacing) + "}}";
+            to_string(ySpacing) +"}}, y coord inv trafo/.code = {\\pgfluamathpa"
+            "res{\\pgfmathresult*" + to_string(ySpacing) + "}}";
     }
     if(zSpacing)
     {
         src += ", z coord trafo/.code = {\\pgfluamathparse{\\pgfmathresult/" +
-            ToString(zSpacing) +"}}, z coord inv trafo/.code = {\\pgfluamathpa"
-            "res{\\pgfmathresult*" + ToString(zSpacing) + "}}";
+            to_string(zSpacing) +"}}, z coord inv trafo/.code = {\\pgfluamathpa"
+            "res{\\pgfmathresult*" + to_string(zSpacing) + "}}";
     }
 
     if(_showColorbar)
@@ -957,22 +801,22 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
 
     if(xMinSet || xSqueeze)
     {
-        src += ", xmin = " + ToString(xMinSet ? xMin : xMinData);
+        src += ", xmin = " + to_string(xMinSet ? xMin : xMinData);
     }
     if(xMaxSet || xSqueeze)
     {
-        src += ", xmax = " + ToString(xMaxSet ? xMax : xMaxData);
+        src += ", xmax = " + to_string(xMaxSet ? xMax : xMaxData);
     }
 
     const double tempYMin = yMinSet ? yMin : yMinData;
     const double tempYMax = yMaxSet ? yMax : yMaxData;
     if(yMinSet || ySqueeze)
     {
-        src += ", ymin = " + ToString(tempYMin);
+        src += ", ymin = " + to_string(tempYMin);
     }
     if(yMaxSet || ySqueeze)
     {
-        src += ", ymax = " + ToString(tempYMax);
+        src += ", ymax = " + to_string(tempYMax);
     }
 
     // Z/meta max/min don't seem to affect contour placement in contour plots.
@@ -980,17 +824,17 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
     {
         if(_viewAngles[0] != 0. || _viewAngles[1] != 90.)
         {
-            src += ", zmin = " + ToString(zMin);
+            src += ", zmin = " + to_string(zMin);
         }
-        src += ", point meta min = " + ToString(zMin);
+        src += ", point meta min = " + to_string(zMin);
     }
     if(zMaxSet)
     {
         if(_viewAngles[0] != 0. || _viewAngles[1] != 90.)
         {
-            src += ", zmax = " + ToString(zMax);
+            src += ", zmax = " + to_string(zMax);
         }
-        src += ", point meta max = " + ToString(zMax);
+        src += ", point meta max = " + to_string(zMax);
     }
 
     if(!_xLabel.empty())
@@ -1053,7 +897,7 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
     src += ", x tick label style = {font = \\" + FontSize;
     if(xPrecision >= 0)
     {
-        src += ", /pgf/number format/precision = " + ToString(xPrecision) +
+        src += ", /pgf/number format/precision = " + to_string(xPrecision) +
             ", /pgf/number format/zerofill";
     }
     if(xFormat)
@@ -1076,7 +920,7 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
     src += "}, y tick label style = {font = \\" + FontSize;
     if(yPrecision >= 0)
     {
-        src += ", /pgf/number format/precision = " + ToString(yPrecision) +
+        src += ", /pgf/number format/precision = " + to_string(yPrecision) +
             ", /pgf/number format/zerofill";
     }
     if(yFormat)
@@ -1095,7 +939,7 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
     src += "}, z tick label style = {font = \\" + FontSize;
     if(zPrecision >= 0)
     {
-        src += ", /pgf/number format/precision = " + ToString(zPrecision) +
+        src += ", /pgf/number format/precision = " + to_string(zPrecision) +
             ", /pgf/number format/zerofill";
     }
     if(zFormat)
@@ -1117,7 +961,7 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
         src += ", xtick = {";
         for(std::size_t i = 0; i < _xTicks.size(); ++i)
         {
-            src += ToString(_xTicks[i]);
+            src += to_string(_xTicks[i]);
             if(i + 1 < _xTicks.size())
             {
                 src += ", ";
@@ -1143,7 +987,7 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
         src += ", ytick = {";
         for(std::size_t i = 0; i < _yTicks.size(); ++i)
         {
-            src += ToString(_yTicks[i]);
+            src += to_string(_yTicks[i]);
             if(i + 1 < _yTicks.size())
             {
                 src += ", ";
@@ -1169,7 +1013,7 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
         src += ", ztick = {";
         for(std::size_t i = 0; i < _zTicks.size(); ++i)
         {
-            src += ToString(_zTicks[i]);
+            src += to_string(_zTicks[i]);
             if(i + 1 < _zTicks.size())
             {
                 src += ", ";
@@ -1198,9 +1042,9 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
     }
     for(std::size_t i = 0; i < _bgBands.size(); i += 2)
     {
-        src += "\\fill[black, opacity = 0.1] (" + ToString(_bgBands[i]) + ", " +
-            ToString(yMin) + ") rectangle (" + ToString(_bgBands[i + 1]) + ", "
-            + ToString(yMax) + ");\n";
+        src += "\\fill[black, opacity = 0.1] (" + to_string(_bgBands[i]) + ", "
+            + to_string(yMin) + ") rectangle (" + to_string(_bgBands[i + 1]) +
+            ", " + to_string(yMax) + ");\n";
     }
 
     for(std::size_t i = 0, sz = surfaceX.size(); i < sz; ++i)
@@ -1246,8 +1090,8 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
         {
             src += "\\addplot3[unbounded coords = jump, surf, mesh/rows = " +
                 std::to_string(numRows) + ", mesh/ordering = y varies, shader ="
-                " interp, opacity = " + ToString(_opacity) + ", z buffer = sort"
-                "] table {";
+                " interp, opacity = " + to_string(_opacity) + ", z buffer = sor"
+                "t] table {";
         }
         const std::string dataFile = std::to_string(subplot) + "." + std::
             to_string(i) + ".surf";
@@ -1262,8 +1106,8 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
         out << "x y z" << std::endl;
         for(std::size_t j = 0; j < numPoints; ++j)
         {
-            out << ToString(surfaceX[i][j]) << " " << ToString(surfaceY[i][j])
-                << " " << ToString(surfaceZ[i][j]) << std::endl;
+            out << to_string(surfaceX[i][j]) << " " << to_string(surfaceY[i][j])
+                << " " << to_string(surfaceZ[i][j]) << std::endl;
         }
     }
 
@@ -1288,8 +1132,8 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
         src += "] ";
         for(std::size_t j = 0; j < numPoints; ++j)
         {
-            src += "(" + ToString(fillX[i][j]) + ", " + ToString(fillY[i][j]) +
-                ")--";
+            src += "(" + to_string(fillX[i][j]) + ", " + to_string(fillY[i][j])
+                + ")--";
         }
         src += "cycle;\n";
     }
@@ -1330,7 +1174,7 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
         if(markers[i].mark > 0)
         {
             src += "mark = " + convert_marker(markers[i].mark) + ", mark size ="
-                " " + ToString(3.*markers[i].size);
+                " " + to_string(3.*markers[i].size);
             if(markers[i].spacing)
             {
                 src += ", mark repeat = " + std::to_string(markers[i].spacing);
@@ -1339,7 +1183,7 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
         else if(markers[i].mark < 0 && MarkCycle(i).mark > 0)
         {
             src += "mark = " + convert_marker(MarkCycle(i).mark) + ", mark size"
-                " = " + ToString(3.*MarkCycle(i).size*markers[i].size);
+                " = " + to_string(3.*MarkCycle(i).size*markers[i].size);
             if(markers[i].spacing)
             {
                 src += ", mark repeat = " + std::to_string(markers[i].spacing);
@@ -1388,9 +1232,9 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
             endl;
         for(std::size_t j = 0; j < numPoints; ++j)
         {
-            out << ToString(data[i][0][j]) << " " << ToString(data[i][1][j]) <<
-                (is3D ? " " + ToString(data[i][2][j]) : "") << (hasMeta ? " " +
-                ToString(data[i][3][j]) : "") << std::endl;
+            out << to_string(data[i][0][j]) << " " << to_string(data[i][1][j])
+                << (is3D ? " " + to_string(data[i][2][j]) : "") << (hasMeta ?
+                " " + to_string(data[i][3][j]) : "") << std::endl;
         }
     }
 
@@ -1427,8 +1271,8 @@ void pgfplotter::plot(const std::string& path, const std::vector<const
         break;
     }
 
-    std::string src = src0 + src9 + src2a + std::to_string(p.size()) + (noSep ?
-        src2bNoSep : src2b);
+    std::string src = CommonPreamble + src9 + src2a + std::to_string(p.size()) +
+        (noSep ? src2bNoSep : src2b);
     for(std::size_t i = 0, n = p.size(); i < n; ++i)
     {
         src += p[i]->plotSrc(path, i);
