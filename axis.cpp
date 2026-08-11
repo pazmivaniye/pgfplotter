@@ -877,7 +877,7 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
         src += ", xmax = " + to_string(ceil_log(xMaxPosData, _xLog));
     }
 
-    if(yMinSet || xSqueeze)
+    if(yMinSet || ySqueeze)
     {
         src += ", ymin = " + to_string(yMinSet ? yMin : yMinData);
     }
@@ -885,7 +885,7 @@ std::string pgfplotter::Axis::plotSrc(const std::string& path, int subplot)
     {
         src += ", ymin = " + to_string(floor_log(yMinPosData, _yLog));
     }
-    if(yMaxSet || xSqueeze)
+    if(yMaxSet || ySqueeze)
     {
         src += ", ymax = " + to_string(yMaxSet ? yMax : yMaxData);
     }
