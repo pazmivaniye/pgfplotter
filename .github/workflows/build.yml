@@ -1,7 +1,41 @@
 name: build
 on: [push, pull_request]
 jobs:
-  #windows: # VERSION ISSUES W/ TEXLIVE, REPLACE W/ TLMGR LIKE ON MACOS
+  #windows-ucrt64: # VERSION ISSUES W/ TEXLIVE, REPLACE W/ TLMGR LIKE ON MACOS
+  #  runs-on: windows-latest
+  #  defaults:
+  #    run:
+  #      shell: msys2 {0}
+  #  steps:
+  #    - uses: actions/checkout@v4
+  #    - uses: msys2/setup-msys2@v2
+  #      with:
+  #        msystem: UCRT64
+  #        update: true
+  #        install: make mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-perl-win32-tieregistry
+  #    - name: Install Dependencies
+  #      run: |
+  #        : # Fix Perl locale issue
+  #        export LC_ALL=en_US.utf8
+  #        : # Fix Perl search path/Win32::TieRegistry version issue
+  #        dir=D:/a/_temp/msys64/ucrt64/lib/perl5/site_perl
+  #        mkdir -p $dir/5.38.2/Win32
+  #        ln $dir/5.32.1/Win32/TieRegistry.pm $dir/5.38.2/Win32/TieRegistry.pm
+  #        : # Downgrade zlib version to match LuaLaTex
+  #        pkg=mingw-w64-ucrt-x86_64-zlib
+  #        ver=1.3-1
+  #        file=$pkg-$ver-any.pkg.tar.zst
+  #        curl -LO https://repo.msys2.org/mingw/ucrt64/$file
+  #        pacman -U --noconfirm $file
+  #        : # Install TeX Live packages
+  #        pacman -S --noconfirm mingw-w64-ucrt-x86_64-texlive-luatex mingw-w64-ucrt-x86_64-texlive-latex-extra mingw-w64-ucrt-x86_64-texlive-fonts-extra
+  #    - name: Build and Test
+  #        run: make -j
+  #    - uses: actions/upload-artifact@v4
+  #      with:
+  #        name: windows-ucrt64-build
+  #        path: libpgfplotter.a
+  #windows-clang64: # VERSION ISSUES W/ TEXLIVE, REPLACE W/ TLMGR LIKE ON MACOS
   #  runs-on: windows-latest
   #  defaults:
   #    run:
@@ -33,7 +67,7 @@ jobs:
   #        run: make -j
   #    - uses: actions/upload-artifact@v4
   #      with:
-  #        name: windows-build
+  #        name: windows-clang64-build
   #        path: libpgfplotter.a
   macos:
     runs-on: macos-latest

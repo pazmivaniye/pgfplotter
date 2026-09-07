@@ -5,13 +5,19 @@ MINMACOSVER := 10.15
 LIBNAME := $(shell echo $(PROJNAME) | sed 's/_//g' | tr '[:upper:]' '[:lower:]')
 ifeq ($(OS), Windows_NT)
     OSPRETTY := Windows
-    ifneq ($(MSYSTEM), CLANG64)
-        $(error Unsupported Windows environment.)
+    ifeq ($(MSYSTEM), UCRT64)
+        CC := gcc
+        CXX := g++
+        LIBPATH := /ucrt64/lib
+        INCLPATH := /ucrt64/include
+    else ifeq ($(MSYSTEM), CLANG64)
+        CC := clang
+        CXX := clang++
+        LIBPATH := /clang64/lib
+        INCLPATH := /clang64/include
+    else
+        $(error Unsupported Windows environment)
     endif
-    CC := clang
-    CXX := clang++
-    LIBPATH := /clang64/lib
-    INCLPATH := /clang64/include
 else
     ifeq ($(shell uname -s), Darwin)
         OSPRETTY := macOS
