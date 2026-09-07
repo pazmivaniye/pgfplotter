@@ -4,14 +4,23 @@ MINMACOSVER := 10.15
 
 LIBNAME := $(shell echo $(PROJNAME) | sed 's/_//g' | tr '[:upper:]' '[:lower:]')
 ifeq ($(OS), Windows_NT)
-    LIBPATH := /mingw64/lib
-    INCLPATH := /mingw64/include
     OSPRETTY := Windows
+    ifneq ($(MSYSTEM), CLANG64)
+        $(error Unsupported Windows environment.)
+    endif
+    CC := clang
+    CXX := clang++
+    LIBPATH := /clang64/lib
+    INCLPATH := /clang64/include
 else
     ifeq ($(shell uname -s), Darwin)
         OSPRETTY := macOS
+        CC := clang
+        CXX := clang++
     else
         OSPRETTY := Linux
+        CC := gcc
+        CXX := g++
     endif
     LIBPATH := /usr/local/lib
     INCLPATH := /usr/local/include
@@ -20,18 +29,10 @@ OPTIM := 3
 CFLAGS := -O$(OPTIM) -Wall -Wextra -Wno-missing-braces
 ifeq ($(OSPRETTY), macOS)
     CFLAGS += -mmacosx-version-min=$(MINMACOSVER) -Wunguarded-availability
-else
-    ifeq ($(OSPRETTY), Windows)
-        CFLAGS += -Wno-cast-function-type
-    endif
 endif
 CXXFLAGS := -std=c++$(CXXVER) $(CFLAGS) -Wold-style-cast
-ifeq ($(OSPRETTY), macOS)
+ifeq ($(CC), clang)
     CXXFLAGS += -Wno-string-plus-int
-else
-    ifeq ($(OSPRETTY), Windows)
-        CXXFLAGS += -Wno-deprecated-copy
-    endif
 endif
 ARFLAGS := -rcs
 

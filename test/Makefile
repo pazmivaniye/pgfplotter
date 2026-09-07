@@ -2,24 +2,35 @@ CXXVER := 17
 MINMACOSVER := 10.15
 
 ifeq ($(OS), Windows_NT)
-    LIBPATH := /mingw64/lib
     OSPRETTY := Windows
+    ifneq ($(MSYSTEM), CLANG64)
+        $(error Unsupported Windows environment.)
+    endif
+    CC := clang
+    CXX := clang++
+    LIBPATH := /clang64/lib
+    INCLPATH := /clang64/include
 else
     ifeq ($(shell uname -s), Darwin)
         OSPRETTY := macOS
+        CC := clang
+        CXX := clang++
     else
         OSPRETTY := Linux
+        CC := gcc
+        CXX := g++
     endif
     LIBPATH := /usr/local/lib
+    INCLPATH := /usr/local/include
 endif
 CXXFLAGS := -std=c++$(CXXVER) -O3 -Wall -Wextra -Wno-missing-braces -Wold-style-cast
 ifeq ($(OSPRETTY), macOS)
-    CXXFLAGS += -mmacosx-version-min=$(MINMACOSVER) -Wunguarded-availability -Wno-string-plus-int
+    CXXFLAGS += -mmacosx-version-min=$(MINMACOSVER) -Wunguarded-availability
 else
-    ifeq ($(OSPRETTY), Windows)
-        CXXFLAGS += -Wno-deprecated-copy -static -mwindows
-    endif
     CXXFLAGS += -pthread
+endif
+ifeq ($(CC), clang)
+    CXXFLAGS += -Wno-string-plus-int
 endif
 CXXFLAGS += -I..
 LDLIBS := ../libpgfplotter.a
