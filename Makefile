@@ -77,13 +77,13 @@ install: $(PROJNAME) lib$(LIBNAME).a
 	    { echo "mkdir -p $(INCLPATH)"; mkdir -p $(INCLPATH); }
 	@cmp -s $(PROJNAME) $(INCLPATH)/$(PROJNAME) && \
 	    echo "Nothing to do for $(INCLPATH)/$(PROJNAME)" || \
-	    { echo "cp $(PROJNAME)" "$(INCLPATH)/"; \
+	    { echo "cp $(PROJNAME) $(INCLPATH)/"; \
 	    cp $(PROJNAME) $(INCLPATH)/; }
 	@[[ -d $(LIBPATH) ]] || \
 	    { echo "mkdir -p $(LIBPATH)"; mkdir -p $(LIBPATH); }
 	@cmp -s lib$(LIBNAME).a $(LIBPATH)/lib$(LIBNAME).a && \
 	    echo "Nothing to do for $(LIBPATH)/lib$(LIBNAME).a" || \
-	    { echo "cp lib$(LIBNAME).a" "$(LIBPATH)/"; \
+	    { echo "cp lib$(LIBNAME).a $(LIBPATH)/"; \
 	    cp lib$(LIBNAME).a $(LIBPATH)/; }
 
 test: lib$(LIBNAME).a
