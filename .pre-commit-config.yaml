@@ -1,0 +1,28 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-yaml
+  - repo: https://github.com/pazmivaniye/pre-commit-hooks
+    rev: v1.0.0
+    hooks:
+      - id: check-chars
+        exclude: ^axis.cpp$
+        exclude_types:
+          - makefile
+      - id: check-filenames
+      - id: check-line-length
+        exclude: ^.github/
+  - repo: local
+    hooks:
+      - id: test
+        name: test
+        description: Run test program
+        entry: make test
+        language: system
+        pass_filenames: false
+        always_run: true
