@@ -1,6 +1,6 @@
 PROJNAME := pgfplotter
 CXXVER := 17
-MINMACOSVER := 10.15
+MINMACOSVER := 11.0
 
 LIBNAME := $(shell echo $(PROJNAME) | sed 's/_//g' | tr '[:upper:]' '[:lower:]')
 ifeq ($(OS), Windows_NT)

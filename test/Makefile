@@ -1,5 +1,5 @@
 CXXVER := 17
-MINMACOSVER := 10.15
+MINMACOSVER := 11.0
 
 ifeq ($(OS), Windows_NT)
     OSPRETTY := Windows
