@@ -16,7 +16,7 @@ repos:
           - makefile
       - id: check-filenames
       - id: check-line-length
-        exclude: ^.github/
+        exclude: ^\.github/
   - repo: local
     hooks:
       - id: test
