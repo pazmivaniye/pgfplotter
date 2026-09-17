@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -8,12 +8,10 @@ repos:
       - id: check-case-conflict
       - id: check-yaml
   - repo: https://github.com/pazmivaniye/pre-commit-hooks
-    rev: v1.0.0
+    rev: ac0c5b80890a4d8d2a537e6c8482f4bc1a6430af
     hooks:
       - id: check-chars
         exclude: ^axis.cpp$
-        exclude_types:
-          - makefile
       - id: check-filenames
       - id: check-line-length
         exclude: ^\.github/
