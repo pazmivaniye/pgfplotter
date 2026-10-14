@@ -12,7 +12,7 @@ jobs:
   #      with:
   #        msystem: UCRT64
   #        update: true
-  #        install: make mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-perl-win32-tieregistry
+  #        install: diffutils make mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-perl-win32-tieregistry
   #    - name: Install Dependencies
   #      run: |
   #        : # Fix Perl locale issue
@@ -46,7 +46,7 @@ jobs:
   #      with:
   #        msystem: CLANG64
   #        update: true
-  #        install: make mingw-w64-clang-x86_64-clang mingw-w64-clang-x86_64-perl-win32-tieregistry
+  #        install: diffutils make mingw-w64-clang-x86_64-clang mingw-w64-clang-x86_64-perl-win32-tieregistry
   #    - name: Install Dependencies
   #      run: |
   #        : # Fix Perl locale issue
