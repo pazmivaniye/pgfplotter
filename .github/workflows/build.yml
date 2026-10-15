@@ -7,7 +7,7 @@ jobs:
   #    run:
   #      shell: msys2 {0}
   #  steps:
-  #    - uses: actions/checkout@v4
+  #    - uses: actions/checkout@v7
   #    - uses: msys2/setup-msys2@v2
   #      with:
   #        msystem: UCRT64
@@ -31,7 +31,7 @@ jobs:
   #        pacman -S --noconfirm mingw-w64-ucrt-x86_64-texlive-luatex mingw-w64-ucrt-x86_64-texlive-latex-extra mingw-w64-ucrt-x86_64-texlive-fonts-extra
   #    - name: Build and Test
   #        run: make -j
-  #    - uses: actions/upload-artifact@v4
+  #    - uses: actions/upload-artifact@v7
   #      with:
   #        name: windows-ucrt64-build
   #        path: libpgfplotter.a
@@ -41,7 +41,7 @@ jobs:
   #    run:
   #      shell: msys2 {0}
   #  steps:
-  #    - uses: actions/checkout@v4
+  #    - uses: actions/checkout@v7
   #    - uses: msys2/setup-msys2@v2
   #      with:
   #        msystem: CLANG64
@@ -65,42 +65,42 @@ jobs:
   #        pacman -S --noconfirm mingw-w64-clang-x86_64-texlive-luatex mingw-w64-clang-x86_64-texlive-latex-extra mingw-w64-clang-x86_64-texlive-fonts-extra
   #    - name: Build and Test
   #        run: make -j
-  #    - uses: actions/upload-artifact@v4
+  #    - uses: actions/upload-artifact@v7
   #      with:
   #        name: windows-clang64-build
   #        path: libpgfplotter.a
   macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: melusina-org/setup-macports@v1
       - name: Install Dependencies
         run: |
           curl -LO https://mirror.ctan.org/systems/mac/mactex/BasicTeX.pkg
           sudo installer -pkg BasicTeX.pkg -target /
-          export PATH=/Library/TeX/texbin:$PATH
+          export PATH="/Library/TeX/texbin:$PATH"
           sudo tlmgr update --self
           sudo tlmgr install standalone xstring luatex85 newtx pgfplots siunitx fontaxes txfonts
           sudo port install ghostscript poppler
       - name: Build and Test
         run: |
-          export PATH=/Library/TeX/texbin:$PATH
+          export PATH="/Library/TeX/texbin:$PATH"
           make -j
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: macos-build
           path: libpgfplotter.a
   linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Dependencies
         run: |
           sudo apt update
           sudo apt install texlive-luatex texlive-latex-extra texlive-fonts-extra texlive-xetex texlive-science ghostscript poppler-utils
       - name: Build and Test
         run: make -j
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: linux-build
           path: libpgfplotter.a
