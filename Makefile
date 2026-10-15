@@ -73,13 +73,13 @@ lib$(LIBNAME).a: $(OBJ)
 endif
 
 install: $(PROJNAME) lib$(LIBNAME).a
-	@[[ -d $(INCLPATH) ]] || \
+	@[ -d $(INCLPATH) ] || \
 	    { echo "mkdir -p $(INCLPATH)"; mkdir -p $(INCLPATH); }
 	@cmp -s $(PROJNAME) $(INCLPATH)/$(PROJNAME) && \
 	    echo "Nothing to do for $(INCLPATH)/$(PROJNAME)" || \
 	    { echo "cp $(PROJNAME) $(INCLPATH)/"; \
 	    cp $(PROJNAME) $(INCLPATH)/; }
-	@[[ -d $(LIBPATH) ]] || \
+	@[ -d $(LIBPATH) ] || \
 	    { echo "mkdir -p $(LIBPATH)"; mkdir -p $(LIBPATH); }
 	@cmp -s lib$(LIBNAME).a $(LIBPATH)/lib$(LIBNAME).a && \
 	    echo "Nothing to do for $(LIBPATH)/lib$(LIBNAME).a" || \
