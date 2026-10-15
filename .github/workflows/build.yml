@@ -73,7 +73,6 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: melusina-org/setup-macports@v1
       - name: Install Dependencies
         run: |
           curl -LO https://mirror.ctan.org/systems/mac/mactex/BasicTeX.pkg
@@ -81,7 +80,7 @@ jobs:
           export PATH="/Library/TeX/texbin:$PATH"
           sudo tlmgr update --self
           sudo tlmgr install standalone xstring luatex85 newtx pgfplots siunitx fontaxes txfonts
-          sudo port install ghostscript poppler
+          brew install ghostscript poppler
       - name: Build and Test
         run: |
           export PATH="/Library/TeX/texbin:$PATH"
